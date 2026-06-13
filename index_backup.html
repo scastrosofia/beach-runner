@@ -1,0 +1,3083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beach Runner</title>
+<style>
+  body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif; background: #000; }
+  canvas { display: block; }
+  #p1UI {
+    position: fixed;
+    top: 16px;
+    left: 10px;
+    z-index: 100;
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(16px, 2.5vw, 28px);
+    text-shadow: 0 0 10px #ff00aa;
+    pointer-events: none;
+    user-select: none;
+  }
+  #p2UI {
+    position: fixed;
+    top: 16px;
+    left: calc(50% + 10px);
+    z-index: 100;
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(16px, 2.5vw, 28px);
+    text-shadow: 0 0 10px #ff00aa;
+    pointer-events: none;
+    user-select: none;
+  }
+  #splitDivider {
+    position: fixed;
+    top: 0; left: 50%;
+    width: 2px; height: 100%;
+    background: #ff00aa;
+    box-shadow: 0 0 8px #ff00aa88;
+    z-index: 50;
+    pointer-events: none;
+  }
+  .gameover-overlay {
+    position: fixed;
+    top: 0; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.7);
+    z-index: 20;
+    text-align: center;
+  }
+  .gameover-overlay.show { display: flex; }
+  .gameover-result {
+    font-family: 'Comic Sans MS', cursive;
+    font-size: clamp(36px, 5vw, 60px);
+    color: #ff00aa;
+    text-shadow: 0 0 20px #ff00aa, 0 0 40px #ff00aa88;
+    margin-bottom: 16px;
+  }
+  .gameover-score {
+    font-family: 'Comic Sans MS', cursive;
+    font-size: clamp(24px, 3vw, 36px);
+    color: #ff00aa;
+    text-shadow: 0 0 10px #ff00aa;
+  }
+  #restartBtn {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 16px 64px;
+    font-size: clamp(20px, 3vw, 28px);
+    background: #ff00aa;
+    color: #fff !important;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    z-index: 30;
+    transition: transform 0.15s;
+    box-shadow: 0 0 20px #ff00aa88;
+    text-shadow: 0 0 10px white;
+    font-family: 'Comic Sans MS', cursive;
+    min-width: min(400px, 80vw);
+  }
+  #restartBtn:hover { transform: translateX(-50%) scale(1.08); }
+  #restartBtn:active { transform: translateX(-50%) scale(0.96); }
+  @keyframes floatUp {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-80px); }
+  }
+  * {
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+    color: #ff00aa !important;
+  }
+  .gameover-overlay, .gameover-overlay *, #restartBtn {
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+  }
+  .gameover-overlay, .gameover-overlay * {
+    color: #ff00aa !important;
+    text-shadow: 0 0 10px #ff00aa;
+  }
+  #p1UI, #p2UI {
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive !important;
+    text-shadow: 0 0 10px #ff00aa;
+  }
+  @keyframes pulse {
+    0%,100%{opacity:1}
+    50%{opacity:0.5}
+  }
+  #playerSelectScreen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.85);
+    z-index: 1001;
+  }
+  #playerSelectScreen.hidden { display: none; }
+  .player-select-title {
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(36px, 5vw, 60px);
+    text-shadow: 0 0 20px #ff00aa, 0 0 40px #ff00aa88;
+    margin-bottom: 50px;
+    text-align: center;
+  }
+  .player-select-buttons {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .player-select-btn {
+    padding: 30px 60px;
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(28px, 4vw, 40px);
+    border: 3px solid #ff00aa;
+    border-radius: 16px;
+    background: rgba(255, 0, 170, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    box-shadow: 0 0 15px #ff00aa44;
+    text-shadow: 0 0 10px #ff00aa;
+  }
+  .player-select-btn.selected {
+    border-color: #ff00aa;
+    box-shadow: 0 0 30px #ff00aa88, 0 0 60px #ff00aa44;
+    transform: scale(1.05);
+  }
+  .player-select-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 30px #ff00aa88, 0 0 60px #ff00aa44;
+  }
+  .player-select-btn:active {
+    transform: scale(0.96);
+  }
+  .player-select-hint {
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa88;
+    font-size: clamp(14px, 2vw, 18px);
+    margin-top: 36px;
+    text-align: center;
+    animation: pulse 1.5s infinite;
+  }
+  #characterSelectScreen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    overflow-y: auto;
+    padding-bottom: 20px;
+  }
+  #characterSelectScreen.hidden { display: none; }
+  .char-select-title {
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(28px, 5vw, 55px);
+    text-shadow: 0 0 20px #ff00aa, 0 0 40px #ff00aa88;
+    margin-bottom: 50px;
+    text-align: center;
+    overflow: hidden;
+    max-width: 100vw;
+  }
+  .char-select-cards {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .arrow {
+    font-size: 48px;
+    color: #ff00aa;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .arrow:hover { transform: scale(1.3); }
+  .arrow:active { transform: scale(0.9); }
+  .char-select-hint {
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa88;
+    font-size: clamp(14px, 2vw, 18px);
+    margin-top: 36px;
+    text-align: center;
+    animation: pulse 1.5s infinite;
+  }
+  /* ─── Level 2 ────────────────────────────────────────────────── */
+  #level2Transition {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #000;
+    z-index: 2000;
+  }
+  #level2Transition.show { display: flex; }
+  .l2-title {
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(40px, 6vw, 80px);
+    text-shadow: 0 0 30px #ff00aa, 0 0 60px #ff00aa88;
+    text-align: center;
+    padding: 20px;
+  }
+  .l2-gameover-overlay {
+    position: fixed;
+    top: 0; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.85);
+    z-index: 20;
+    text-align: center;
+  }
+  .l2-gameover-overlay.show { display: flex; }
+  .l2-gameover-result {
+    font-family: 'Comic Sans MS', cursive;
+    font-size: clamp(36px, 5vw, 60px);
+    color: #ff00aa;
+    text-shadow: 0 0 20px #ff00aa, 0 0 40px #ff00aa88;
+    margin-bottom: 16px;
+  }
+  /* ─── Level 3 ────────────────────────────────────────────────── */
+  #level3Transition {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #000;
+    z-index: 2001;
+  }
+  #level3Transition.show { display: flex; }
+  .l3-title {
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: clamp(40px, 6vw, 80px);
+    text-shadow: 0 0 30px #ff00aa, 0 0 60px #ff00aa88;
+    text-align: center;
+    padding: 20px;
+  }
+  #l3HpContainer {
+    position: fixed;
+    top: 16px;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    pointer-events: none;
+    display: none;
+    font-family: 'Comic Sans MS', cursive;
+  }
+  #l3HpContainer.show { display: block; }
+  .l3-hp-row {
+    position: absolute;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .l3-hp-row.right { right: 20px; left: auto; align-items: flex-end; }
+  .l3-hp-row.left { left: 20px; }
+  .l3-hp-label {
+    font-size: clamp(18px, 2vw, 24px);
+    color: #ff00aa;
+    text-shadow: 0 0 10px #ff00aa;
+  }
+  .l3-hp-bg {
+    width: 300px;
+    height: 16px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #ff00aa;
+  }
+  .l3-hp-fill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.2s;
+  }
+  .l3-hp-fill.player { background: #00ff88; }
+  .l3-hp-fill.boss { background: #ff0044; }
+  #l3GameOverScreen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.85);
+    z-index: 2002;
+    text-align: center;
+  }
+  #l3GameOverScreen.show { display: flex; }
+  #l3WinScreen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.85);
+    z-index: 2002;
+    text-align: center;
+  }
+  #l3WinScreen.show { display: flex; }
+  .l3-big-text {
+    font-family: 'Comic Sans MS', cursive;
+    font-size: clamp(50px, 8vw, 100px);
+    color: #ff00aa;
+    text-shadow: 0 0 30px #ff00aa, 0 0 60px #ff00aa88;
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+<div id="p1UI">
+  <div>J1 <span id="scoreDisplay">0</span></div>
+  <div id="livesDisplay">❤️❤️❤️</div>
+  <div style="margin-top:6px;width:180px;height:12px;background:rgba(0,0,0,0.5);border-radius:6px;overflow:hidden;">
+    <div id="progressBar1" style="width:0px;height:100%;background:#ff00aa;border-radius:6px;transition:width 0.15s;"></div>
+  </div>
+  <div id="spellCD1" style="margin-top:4px;font-size:11px;opacity:1;font-family:'Comic Sans MS',cursive;">Q: HECHIZO</div>
+</div>
+<div id="p2UI" style="display:none;">
+  <div>J2 <span id="scoreDisplay2">0</span></div>
+  <div id="livesDisplay2">❤️❤️❤️</div>
+  <div style="margin-top:6px;width:180px;height:12px;background:rgba(0,0,0,0.5);border-radius:6px;overflow:hidden;">
+    <div id="progressBar2" style="width:0px;height:100%;background:#ff00aa;border-radius:6px;transition:width 0.15s;"></div>
+  </div>
+  <div id="spellCD2" style="margin-top:4px;font-size:11px;opacity:1;font-family:'Comic Sans MS',cursive;">U: HECHIZO</div>
+</div>
+<div id="splitDivider"></div>
+<div id="playerSelectScreen">
+  <div class="player-select-title">CUÁNTAS SOMOS?</div>
+  <div class="player-select-buttons">
+    <div class="player-select-btn selected" id="btn1Player" data-players="1">1 JUGADORA</div>
+    <div class="player-select-btn" id="btn2Player" data-players="2">2 JUGADORAS</div>
+  </div>
+  <div class="player-select-hint">Press 1 or 2 · A / START to select</div>
+</div>
+<div id="characterSelectScreen" class="hidden">
+  <div class="char-select-title" id="charSelectTitle">CHOOSE YOUR FIGHTER</div>
+  <div style="display:flex;gap:60px;justify-content:center;align-items:flex-start;flex-wrap:wrap;" id="charColumnWrapper">
+    <div id="charCol1" style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+      <div style="font-size:24px;color:#ff00aa;font-family:'Comic Sans MS',cursive;">JUGADORA 1</div>
+      <div style="display:flex;align-items:center;gap:20px;">
+        <span class="arrow" id="arrow1Left">◀</span>
+        <canvas id="charPreview1" width="320" height="320" style="width:320px;height:320px;border:none;background:transparent;"></canvas>
+        <span class="arrow" id="arrow1Right">▶</span>
+      </div>
+      <div id="charName1" style="font-size:28px;color:#ff00aa;font-family:'Comic Sans MS',cursive;text-shadow:0 0 10px #ff00aa;">Pipa</div>
+      <div id="charReady1" style="font-size:24px;color:#ff00aa;font-family:'Comic Sans MS',cursive;opacity:0;transition:opacity 0.3s;">LISTO!</div>
+    </div>
+    <div id="charCol2" style="display:none;flex-direction:column;align-items:center;gap:16px;">
+      <div style="font-size:24px;color:#ff00aa;font-family:'Comic Sans MS',cursive;">JUGADORA 2</div>
+      <div style="display:flex;align-items:center;gap:20px;">
+        <span class="arrow" id="arrow2Left">◀</span>
+        <canvas id="charPreview2" width="320" height="320" style="width:320px;height:320px;border:none;background:transparent;"></canvas>
+        <span class="arrow" id="arrow2Right">▶</span>
+      </div>
+      <div id="charName2" style="font-size:28px;color:#ff00aa;font-family:'Comic Sans MS',cursive;text-shadow:0 0 10px #ff00aa;">Pipa</div>
+      <div id="charReady2" style="font-size:24px;color:#ff00aa;font-family:'Comic Sans MS',cursive;opacity:0;transition:opacity 0.3s;">LISTO!</div>
+    </div>
+  </div>
+  <div class="char-select-hint" id="charSelectHint">← → to select · START to confirm</div>
+</div>
+<div id="loadingScreen" style="
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: transparent;
+  z-index: 500; pointer-events: none;
+">
+  <div style="
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: 48px;
+    text-shadow: 0 0 20px #ff00aa;
+    margin-bottom: 40px;
+    animation: pulse 1s infinite;
+  ">loading...</div>
+  <div style="
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: 28px;
+    text-shadow: 0 0 10px #ff00aa;
+    text-align: center;
+    line-height: 2;
+  ">
+    Dos reglas:<br>
+    1- hacete millonaria 🤑<br>
+    2- esquivá la pala 🪛
+  </div>
+  <div id="startPrompt" style="
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: 36px;
+    text-shadow: 0 0 15px #ff00aa;
+    margin-top: 50px;
+    animation: pulse 0.8s infinite;
+  ">▶ Apretá START</div>
+  <div style="
+    font-family: 'Comic Sans MS', cursive;
+    color: #ff00aa;
+    font-size: 18px;
+    text-shadow: 0 0 10px #ff00aa;
+    margin-top: 24px;
+    opacity: 0.8;
+    text-align: center;
+    line-height: 1.6;
+  ">P2 sin joystick: I/J/K/L para moverse · N saltar · M bailar</div>
+</div>
+<div id="level2Transition">
+  <div class="l2-title">¿Quién llegará primero a Lalalá?</div>
+</div>
+<div id="l2GameOverOverlay1" class="l2-gameover-overlay" style="left:0;width:50%;">
+  <div class="l2-gameover-result" id="l2GameoverResult1"></div>
+</div>
+<div id="l2GameOverOverlay2" class="l2-gameover-overlay" style="left:50%;width:50%;">
+  <div class="l2-gameover-result" id="l2GameoverResult2"></div>
+</div>
+<div id="level3Transition">
+  <div class="l3-title">LA PALA TE VINO A BUSCAR A LALALÁ!!!</div>
+</div>
+<div id="l3HpContainer">
+  <div class="l3-hp-row left">
+    <div class="l3-hp-label">MEL</div>
+    <div class="l3-hp-bg"><div class="l3-hp-fill player" id="l3PlayerHpBar" style="width:100%"></div></div>
+    <div id="l3SpellCD" style="font-size:12px;color:#ff00aa;text-shadow:0 0 8px #ff00aa;">Q: HECHIZO</div>
+  </div>
+  <div class="l3-hp-row right">
+    <div class="l3-hp-label">LA PALA</div>
+    <div class="l3-hp-bg"><div class="l3-hp-fill boss" id="l3BossHpBar" style="width:100%"></div></div>
+  </div>
+</div>
+<div id="l3GameOverScreen">
+  <div class="l3-big-text">GAME OVER</div>
+  <button id="l3DaleVueltaBtn" style="padding:16px 64px;font-size:clamp(20px,3vw,28px);background:#ff00aa;border:none;border-radius:12px;cursor:pointer;z-index:30;box-shadow:0 0 20px #ff00aa88;font-family:'Comic Sans MS',cursive;min-width:min(400px,80vw);">Dale de vuelta</button>
+</div>
+<div id="l3WinScreen">
+  <div class="l3-big-text">GANASTE!!!</div>
+</div>
+<div id="l3LlegasteTarde1" style="position:fixed;top:50%;left:25%;transform:translate(-50%,-50%);font-family:'Comic Sans MS',cursive;font-size:clamp(36px,5vw,60px);color:#ff00aa;text-shadow:0 0 20px #ff00aa;z-index:2002;pointer-events:none;display:none;text-align:center;">LLEGASTE TARDE</div>
+<div id="l3LlegasteTarde2" style="position:fixed;top:50%;left:75%;transform:translate(-50%,-50%);font-family:'Comic Sans MS',cursive;font-size:clamp(36px,5vw,60px);color:#ff00aa;text-shadow:0 0 20px #ff00aa;z-index:2002;pointer-events:none;display:none;text-align:center;">LLEGASTE TARDE</div>
+<div id="sinVidas1" style="
+  position:fixed;top:30%;left:25%;transform:translate(-50%,-50%);
+  font-family:'Comic Sans MS',cursive;font-size:clamp(24px,4vw,48px);
+  color:#ff00aa;text-shadow:0 0 20px #ff00aa;
+  z-index:300;pointer-events:none;display:none;
+">SIN VIDAS</div>
+<div id="sinVidas2" style="
+  position:fixed;top:30%;left:75%;transform:translate(-50%,-50%);
+  font-family:'Comic Sans MS',cursive;font-size:clamp(24px,4vw,48px);
+  color:#ff00aa;text-shadow:0 0 20px #ff00aa;
+  z-index:300;pointer-events:none;display:none;
+">SIN VIDAS</div>
+<div id="gameOverOverlay1" class="gameover-overlay" style="left:0;width:50%;">
+  <div class="gameover-result" id="gameoverResult1"></div>
+  <div class="gameover-score" id="gameoverScore1"></div>
+</div>
+<div id="gameOverOverlay2" class="gameover-overlay" style="left:50%;width:50%;">
+  <div class="gameover-result" id="gameoverResult2"></div>
+  <div class="gameover-score" id="gameoverScore2"></div>
+</div>
+<button id="restartBtn" style="display:none;">Dale de vuelta</button>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+let cyclePlayerSelect = 0;
+// ─── Constants ─────────────────────────────────────────────────
+const MOVE_SPEED = 5;
+const MAX_COINS = 15;
+const MAX_SHOVELS = 4;
+const SHOVEL_SCALE_TARGET = 300;
+const GROUND_Y = 0;
+const JUMP_VY = 15;
+const GRAVITY = 0.8;
+const COLLIDE_DIST = 1;
+const INVINCIBILITY_TIME = 2;
+const FLASH_INTERVAL = 10;
+// ─── Characters ──────────────────────────────────────────────────
+const CHARACTERS = {
+  pipa: {
+    name: 'Pipa',
+    base: 'character/Meshy_AI_Colorful_Braided_Doll_biped_color/Meshy_AI_Colorful_Braided_Doll_biped/Meshy_AI_Colorful_Braided_Doll_biped_Character_output.glb',
+    walk: 'character/Meshy_AI_Colorful_Braided_Doll_biped_color/Meshy_AI_Colorful_Braided_Doll_biped/Meshy_AI_Colorful_Braided_Doll_biped_Animation_Walking_withSkin.glb',
+    run: 'character/Meshy_AI_Colorful_Braided_Doll_biped_color/Meshy_AI_Colorful_Braided_Doll_biped/Meshy_AI_Colorful_Braided_Doll_biped_Animation_Running_withSkin.glb',
+    jump: 'character/Meshy_AI_Colorful_Braided_Doll_biped_color/Meshy_AI_Colorful_Braided_Doll_biped/Meshy_AI_Colorful_Braided_Doll_biped_Animation_Run_Jump_and_Roll_withSkin.glb',
+    dance: 'character/Meshy_AI_Colorful_Braided_Doll_biped-dance/Meshy_AI_Colorful_Braided_Doll_biped/Meshy_AI_Colorful_Braided_Doll_biped_Animation_Shake_It_Off_Dance_withSkin.glb',
+    spell: 'character/Meshy_AI_Colorful_Braided_Doll_biped_attack/Meshy_AI_Colorful_Braided_Doll_biped/Meshy_AI_Colorful_Braided_Doll_biped_Animation_mage_soell_cast_3_withSkin.glb'
+  },
+  sofi: {
+    name: 'Sofi',
+    base: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Character_output.glb',
+    walk: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Walking_withSkin.glb',
+    run: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_run_fast_7_withSkin.glb',
+    jump: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Running_withSkin.glb',
+    dance: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Denim_Pop_Dance_withSkin.glb',
+    spell: 'character/sofi/Meshy_AI_Animation_mage_soell_cast_4_withSkin.glb'
+  },
+  bel: {
+    name: 'Bel',
+    base: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Character_output.glb',
+    walk: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Walking_withSkin.glb',
+    run: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Running_withSkin.glb',
+    jump: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Jump_Run_withSkin.glb',
+    dance: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Hip_Hop_Dance_2_withSkin.glb',
+    spell: 'character/bel/Meshy_AI_Animation_mage_soell_cast_2_withSkin.glb'
+  }
+};
+const CHARACTER_KEYS = Object.keys(CHARACTERS);
+const CHAR_LIST = [
+  { key: 'pipa', name: 'Pipa', img: 'character/8f9fda1a-b3da-4716-89b7-c8c0f69ece68.png', color: '#ff00aa' },
+  { key: 'sofi', name: 'Sofi', img: null, color: '#00eeff' },
+  { key: 'bel',  name: 'Bel',  img: null, color: '#aa00ff' }
+];
+// ─── Player State ──────────────────────────────────────────────
+let playerCount = 1;
+let playerSelectActive = true;
+let charSelectActive = false; // true once we enter character selection
+const players = [];
+function createPlayer(index) {
+  return {
+    index,
+    characterKey: 'pipa',
+    characterData: CHARACTERS.pipa,
+    group: new THREE.Group(),
+    x: 0, y: 0, z: 0, vy: 0,
+    jumping: false, onGround: true,
+    invincible: false,
+    invincibleTimer: 0,
+    score: 0, lives: 3,
+    mixer: null,
+    walkAction: null, runAction: null, jumpAction: null, danceAction: null,
+    animState: 'walk',
+    characterReady: false, animationsReady: false,
+    jumpTimer: 0, jumpDuration: 0, prevMoving: false,
+    isDancing: false, danceDiv: null,
+    keys: { up: false, down: false, left: false, right: false },
+    gpKeys: { up: false, down: false, left: false, right: false },
+    jumpButtonPressed: false,
+    confirmed: false,
+    jumpOverTextShown: false,
+    danceCooldown: 0,
+    spellAction: null,
+    spellCooldown: 0,
+    isCastingSpell: false
+  };
+}
+function setupPlayers() {
+  players.length = 0;
+  for (let i = 0; i < playerCount; i++) {
+    const p = createPlayer(i);
+    if (i === 1) {
+      p.group.position.x = 200;
+    }
+    players.push(p);
+    scene.add(p.group);
+  }
+  // Show P2 UI only in 2-player mode
+  document.getElementById('p2UI').style.display = playerCount >= 2 ? '' : 'none';
+}
+// ─── Paths ──────────────────────────────────────────────────────
+const SAND_TEX_PATH = 'assets/sand_color.png';
+const WATER_TEX_PATH = 'ocean-water-cross-section-2026-02-06-06-44-23-utc/Extras/Water_CS_V2_BaseColor.png';
+const SHOVEL_PATHS = [
+  'assets/spade.glb',
+  'shovel-2026-02-08-22-55-28-utc/Spade.glb'
+];
+// ─── Renderer ──────────────────────────────────────────────────
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(1);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.domElement.tabIndex = 0;
+document.body.prepend(renderer.domElement);
+// ─── Scene ─────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
+// ─── Camera ────────────────────────────────────────────────────
+const camera1 = new THREE.PerspectiveCamera(50, window.innerWidth / 2 / window.innerHeight, 0.1, 5000);
+const camera2 = new THREE.PerspectiveCamera(50, window.innerWidth / 2 / window.innerHeight, 0.1, 5000);
+camera1.position.set(0, 300, -600);
+camera1.lookAt(0, 0, 0);
+camera2.position.set(0, 300, -600);
+camera2.lookAt(0, 0, 0);
+// ─── Lighting ──────────────────────────────────────────────────
+const ambientLight = new THREE.AmbientLight(0xffffff, 3);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 3);
+dirLight.position.set(5, 10, 5);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(1024, 1024);
+scene.add(dirLight);
+// ─── Sun ────────────────────────────────────────────────────────
+const sunGeo = new THREE.SphereGeometry(80, 16, 16);
+const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+const sun = new THREE.Mesh(sunGeo, sunMat);
+sun.position.set(500, 800, -2000);
+scene.add(sun);
+// ─── Palm Trees ─────────────────────────────────────────────────
+let palmTemplate = null;
+function loadPalms() {
+  const loader = new GLTFLoader();
+  loader.load('assets/palm.glb', (gltf) => {
+    palmTemplate = gltf.scene;
+    console.log('palm trees loaded');
+    const box = new THREE.Box3().setFromObject(palmTemplate);
+    const height = box.max.y - box.min.y;
+    palmTemplate.scale.setScalar(600 / height);
+    palmTemplate.updateMatrixWorld(true);
+    const scaledBox = new THREE.Box3().setFromObject(palmTemplate);
+    const baseOffset = -scaledBox.min.y;
+    for (let i = 0; i < 8; i++) {
+      const palm = palmTemplate.clone();
+      const x = (Math.random() - 0.5) * 5000;
+      const z = (Math.random() - 0.5) * 5000;
+      palm.position.set(x, baseOffset, z);
+      palm.rotation.y = Math.random() * Math.PI * 2;
+      scene.add(palm);
+    }
+  }, undefined, (err) => {
+    console.log('palm error:', err);
+    for (let i = 0; i < 8; i++) {
+      const trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(8, 12, 80, 8),
+        new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+      );
+      const x = (Math.random() - 0.5) * 5000;
+      const z = (Math.random() - 0.5) * 5000;
+      trunk.position.set(x, 40, z);
+      const fronds = new THREE.Mesh(
+        new THREE.ConeGeometry(40, 60, 8),
+        new THREE.MeshStandardMaterial({ color: 0x228B22 })
+      );
+      fronds.position.set(0, 80, 0);
+      trunk.add(fronds);
+      scene.add(trunk);
+    }
+    console.log('palm trees fallback created');
+  });
+}
+loadPalms();
+// ─── Beach Umbrellas ────────────────────────────────────────────
+for (let i = 0; i < 3; i++) {
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.5, 0.5, 8, 6),
+    new THREE.MeshStandardMaterial({ color: 0xD2B48C })
+  );
+  const umbrellaX = -600 - Math.random() * 300;
+  const umbrellaZ = -300 - Math.random() * 1200;
+  pole.position.set(umbrellaX, 4, umbrellaZ);
+  const canopy = new THREE.Mesh(
+    new THREE.ConeGeometry(8, 2.5, 8),
+    new THREE.MeshStandardMaterial({ color: 0xFF7F7F })
+  );
+  canopy.position.set(0, 8, 0);
+  pole.add(canopy);
+  scene.add(pole);
+}
+// ─── Helpers ───────────────────────────────────────────────────
+const loader = new GLTFLoader();
+function removeRootMotion(clip) {
+  clip.tracks = clip.tracks.filter(track => !track.name.includes('.position'));
+  return clip;
+}
+const texLoader = new THREE.TextureLoader();
+const clock = new THREE.Clock();
+const _v3 = new THREE.Vector3();
+const _mid = new THREE.Vector3();
+const LOADING_CAM_POS = new THREE.Vector3(200, 400, 800);
+let frameCount = 0;
+// ─── Ground ────────────────────────────────────────────────────
+const groundMat = new THREE.MeshStandardMaterial({ color: 0xc2a05a });
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(8000, 8000),
+  groundMat
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(0, 0, 0);
+ground.receiveShadow = true;
+scene.add(ground);
+function loadSandTex(url, prop) {
+  texLoader.load(url, (tex) => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(80, 80);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    groundMat[prop] = tex;
+    groundMat.needsUpdate = true;
+    console.log('sand load success');
+  }, undefined, (err) => {
+    console.log('sand load error:', err);
+  });
+}
+loadSandTex('assets/sand_color.png', 'map');
+loadSandTex('assets/sand_normal.png', 'normalMap');
+loadSandTex('assets/sand_rough.png', 'roughnessMap');
+// ─── Ocean ─────────────────────────────────────────────────────
+let waterTex = null;
+const oceanMat = new THREE.MeshStandardMaterial({ color: 0x3a8fc2, roughness: 0.2, metalness: 0.1 });
+const ocean = new THREE.Mesh(
+  new THREE.PlaneGeometry(1500, 2000),
+  oceanMat
+);
+ocean.rotation.x = -Math.PI / 2;
+ocean.position.set(1800, -10, 0);
+scene.add(ocean);
+texLoader.load(WATER_TEX_PATH, (tex) => {
+  waterTex = tex;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(10, 20);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  oceanMat.map = tex;
+  oceanMat.needsUpdate = true;
+  console.log('water tex loaded');
+}, undefined, (err) => {
+  console.log('water tex error:', err);
+});
+// ─── Game State ────────────────────────────────────────────────
+const game = {
+  started: false,
+  gameOver: false,
+  elapsed: 0,
+  lastCoinSpawn: 0,
+  lastShovelSpawn: 0,
+  lives: 3,
+  lives2: 3,
+  level2Triggered: false,
+  shovelBlockTimer: 0
+};
+// ─── Spawned Objects ──────────────────────────────────────────
+const shovels = [];
+const coins = [];
+const particles = [];
+// ─── Level 2 State ────────────────────────────────────────────
+let l2SceneBuilt = false;
+let l2Cones = [];
+let l2Coins = [];
+let l2Walls = [];
+let l2GroundL2 = null;
+let l2GoalCube = null;
+let l2GoalPlane = null;
+let l2FinishLine = null;
+let l2LastConeSpawn = 0;
+let l2LastCoinSpawn = 0;
+let l2ConeBlockTimer = 0;
+let l2ConeTemplate = null;
+let l2CoinTemplate = null;
+let l2DebugTimer = 0;
+let level2StartZ = 0;
+let l2AI = null;
+let l2OldBackground = null;
+// ─── Level 3 State ────────────────────────────────────────────
+let l3Active = false;
+let l3IntroShowing = false;
+let l3WinnerPI = -1;
+let l3Boss = null;
+let l3BossMixer = null;
+let l3BossHitAction = null;
+let l3BossSpellAction = null;
+let l3BossDodgeAction = null;
+let l3PlayerHitAction = null;
+let l3PlayerDodgeAction = null;
+let l3PlayerHP = 100;
+let l3BossHP = 100;
+let l3BossAttackTimer = 0;
+let l3BossAttackCooldown = 3;
+let l3BossAnimating = false;
+let l3PlayerAnimating = false;
+let l3Confetti = [];
+let l3SceneElements = [];
+let l3Lights = [];
+let l3GroundL3 = null;
+let l3BossDodgeChance = 0.3;
+let l3GameOverShown = false;
+let l3OldSceneBg = null;
+let l3OldFog = null;
+let l3AuraBuffTimer = 0;
+let l3AuraLight = null;
+let l3LosingPlayerDancing = false;
+let l3PrevDanceInput = false;
+// ─── Keys Down Set (for unified getInput) ─────────────────────
+const keysDown = new Set();
+let gameCanStart = false;
+let characterFallback = false;
+let shovelsStarted = false;
+// ─── Load Character ──────────────────────────────────────────
+function loadPlayerCharacter(playerIndex) {
+  const p = players[playerIndex];
+  if (!p) return;
+  p.characterData = CHARACTERS[p.characterKey];
+  console.log('loading character for player', playerIndex, ':', p.characterData.name);
+  loader.load(p.characterData.base, (gltf) => {
+    const model = gltf.scene;
+    model.scale.setScalar(103);
+    scene.add(model);
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(model);
+    model.position.y = -box.min.y;
+    model.position.z = 0;
+    model.rotation.y = 0;
+    scene.remove(model);
+    p.group.add(model);
+    p.group.position.set(0, 0, 0);
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    p.mixer = new THREE.AnimationMixer(model);
+    console.log('character model loaded for player', playerIndex);
+    let animsLoaded = 0;
+    const animsTotal = 3;
+    function onAnimLoaded(name, path, callback) {
+      loader.load(path, (animGltf) => {
+        const clip = animGltf.animations[0];
+        if (clip) {
+          removeRootMotion(clip);
+          const action = p.mixer.clipAction(clip);
+          callback(action);
+          console.log('animation loaded:', name, 'for player', playerIndex);
+        } else {
+          console.warn('No animation found in ' + path);
+        }
+        animsLoaded++;
+        if (animsLoaded >= animsTotal) {
+          p.animationsReady = true;
+          if (p.walkAction) {
+            p.walkAction.play();
+            p.animState = 'walk';
+          }
+          console.log('all animations ready for player', playerIndex);
+          checkAllReady();
+        }
+      }, undefined, (err) => {
+        console.log('animation error:', name, err);
+        animsLoaded++;
+        if (animsLoaded >= animsTotal) {
+          p.animationsReady = true;
+          if (p.walkAction) {
+            p.walkAction.play();
+            p.animState = 'walk';
+          }
+          console.log('all animations ready (with errors) for player', playerIndex);
+          checkAllReady();
+        }
+      });
+    }
+    onAnimLoaded('walk', p.characterData.walk, (act) => { p.walkAction = act; });
+    onAnimLoaded('run', p.characterData.run, (act) => { p.runAction = act; });
+    onAnimLoaded('jump', p.characterData.jump, (act) => { p.jumpAction = act; });
+    loader.load(p.characterData.dance, (gltf) => {
+      const clip = gltf.animations[0];
+      if (clip && p.mixer) {
+        removeRootMotion(clip);
+        p.danceAction = p.mixer.clipAction(clip);
+        console.log('dance animation loaded for player', playerIndex);
+      } else {
+        console.warn('no dance animation found for player', playerIndex);
+      }
+    }, undefined, (err) => {
+      console.log('dance animation error:', err);
+    });
+    // Load spell animation
+    loader.load(p.characterData.spell, (gltf) => {
+      const clip = gltf.animations[0];
+      if (clip && p.mixer) {
+        removeRootMotion(clip);
+        p.spellAction = p.mixer.clipAction(clip);
+        p.spellAction.loop = THREE.LoopOnce;
+        p.spellAction.clampWhenFinished = true;
+        console.log('spell animation loaded for player', playerIndex);
+      } else {
+        console.warn('no spell animation found for player', playerIndex);
+      }
+    }, undefined, (err) => {
+      console.log('spell animation error:', err);
+    });
+    p.characterReady = true;
+    checkAllReady();
+  }, undefined, (err) => {
+    console.log('character error for player', playerIndex, ':', err);
+    const geo = new THREE.BoxGeometry(30, 80, 30);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xff00aa });
+    const placeholder = new THREE.Mesh(geo, mat);
+    placeholder.position.y = 40;
+    p.group.add(placeholder);
+    characterFallback = true;
+    p.characterReady = true;
+    checkAllReady();
+  });
+}
+let allPlayersLoadingStarted = false;
+function loadAllCharacters() {
+  if (!players[0]?.characterKey) {
+    console.log('no character selected, cannot start');
+    return;
+  }
+  if (allPlayersLoadingStarted) return;
+  allPlayersLoadingStarted = true;
+  for (let i = 0; i < players.length; i++) {
+    loadPlayerCharacter(i);
+  }
+}
+function checkAllReady() {
+  const allReady = players.length > 0 && players.every(p => p.characterReady);
+  if (allReady && !gameCanStart) {
+    gameCanStart = true;
+    renderer.domElement.focus();
+    console.log('game can start');
+    const loadingText = document.querySelector('#loadingScreen div');
+    if (loadingText) loadingText.textContent = '¡Listo!';
+    // Auto-hide loading screen once all characters are ready
+    hideLoadingScreen();
+  }
+}
+function hideLoadingScreen() {
+  const ls = document.getElementById('loadingScreen');
+  if (ls) ls.style.display = 'none';
+  console.log('loading screen hidden');
+}
+// ─── Load Shovel Obstacle ─────────────────────────────────────
+let shovelTemplate = null;
+let shovelScale = 1.2;
+function tryLoadShovel(index) {
+  if (index >= SHOVEL_PATHS.length) {
+    console.warn('All shovel GLB paths failed. Creating geometry fallback.');
+    shovelTemplate = new THREE.Group();
+    const handleGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.8, 8);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+    const handle = new THREE.Mesh(handleGeo, handleMat);
+    handle.position.y = 0.4;
+    shovelTemplate.add(handle);
+    const bladeGeo = new THREE.BoxGeometry(0.3, 0.25, 0.02);
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+    const blade = new THREE.Mesh(bladeGeo, bladeMat);
+    blade.position.set(0, 0.02, 0);
+    shovelTemplate.add(blade);
+    shovelScale = 1;
+    return;
+  }
+  const path = SHOVEL_PATHS[index];
+  loader.load(path, (gltf) => {
+    shovelTemplate = gltf.scene;
+    const box = new THREE.Box3().setFromObject(shovelTemplate);
+    const height = box.max.y - box.min.y;
+    shovelScale = SHOVEL_SCALE_TARGET / height;
+    shovelTemplate.scale.setScalar(shovelScale);
+    shovelTemplate.updateMatrixWorld(true);
+    const scaledBox = new THREE.Box3().setFromObject(shovelTemplate);
+    shovelTemplate.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material = new THREE.MeshStandardMaterial({
+          color: 0xffb3de,
+          map: child.material.map || null
+        });
+        child.material.needsUpdate = true;
+      }
+    });
+    shovelTemplate.position.y = -scaledBox.min.y;
+  }, undefined, (err) => {
+    console.warn(`Failed to load shovel from ${path}:`, err);
+    tryLoadShovel(index + 1);
+  });
+}
+tryLoadShovel(0);
+// ─── Load Money Bundle ────────────────────────────────────────
+let moneyBundleTemplate = null;
+let noteTemplate = null;
+let useCoinFallback = false;
+const MONEY_BUNDLE_PATH = 'assets/money.glb';
+loader.load(MONEY_BUNDLE_PATH, (gltf) => {
+  moneyBundleTemplate = gltf.scene;
+  const box = new THREE.Box3().setFromObject(moneyBundleTemplate);
+  const height = box.max.y - box.min.y;
+  const scale = 80 / height;
+  moneyBundleTemplate.scale.setScalar(scale);
+  const texLoader2 = new THREE.TextureLoader();
+  texLoader2.load('assets/money.png', (moneyTex) => {
+    moneyBundleTemplate.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshBasicMaterial({
+          map: moneyTex,
+          side: THREE.DoubleSide,
+          color: 0xffffff,
+          transparent: false
+        });
+      }
+    });
+  }, undefined, (err) => {
+    moneyBundleTemplate.traverse((child) => {
+      if (child.isMesh) {
+        child.material = new THREE.MeshBasicMaterial({
+          color: 0x85bb65,
+          side: THREE.DoubleSide
+        });
+      }
+    });
+  });
+}, undefined, (err) => {
+  useCoinFallback = true;
+});
+// ─── Preload music note for Level 2 ────────────────────────────
+new GLTFLoader().load('assets/musicnote.glb', gltf => {
+  noteTemplate = gltf.scene;
+  noteTemplate.traverse(c => {
+    if (c.isMesh) c.material = new THREE.MeshBasicMaterial({ color: 0xff00aa, side: THREE.DoubleSide });
+  });
+  const nb = new THREE.Box3().setFromObject(noteTemplate);
+  noteTemplate.scale.setScalar(80 / (nb.max.y - nb.min.y));
+  l2CoinTemplate = noteTemplate;
+  console.log('NOTE PRELOADED');
+}, undefined, e => console.error('NOTE FAILED:', e));
+// ─── Spawn Coin ────────────────────────────────────────────────
+const shadowGeo = new THREE.CylinderGeometry(50, 50, 2, 24);
+const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 });
+function getSpawnZ() {
+  if (players.length === 0) return -500;
+  let avgZ = 0;
+  for (const p of players) avgZ += p.group.position.z;
+  return (avgZ / players.length) - 500 - Math.random() * 1500;
+}
+function spawnCoin() {
+  if (coins.length >= MAX_COINS) return;
+  const x = (Math.random() - 0.5) * 4000;
+  const z = getSpawnZ();
+  const baseY = 60;
+  let coin;
+  if (moneyBundleTemplate) {
+    coin = moneyBundleTemplate.clone();
+  } else if (useCoinFallback) {
+    const coinGeo = new THREE.BoxGeometry(40, 60, 10);
+    const coinMat = new THREE.MeshStandardMaterial({ color: 0x00cc44 });
+    coin = new THREE.Mesh(coinGeo, coinMat);
+    coin.castShadow = true;
+  } else {
+    return;
+  }
+  coin.position.set(x, baseY, z);
+  coin.userData.baseY = baseY;
+  coin.userData.bobOffset = Math.random() * Math.PI * 2;
+  coin.traverse((child) => {
+    if (child.isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+  shadow.position.set(x, 1, z);
+  shadow.userData.coinRef = coin;
+  coin.userData.shadowRef = shadow;
+  scene.add(shadow);
+  const light = new THREE.PointLight(0xFFD700, 1, 200);
+  coin.add(light);
+  scene.add(coin);
+  coins.push(coin);
+}
+// ─── Spawn Coin Particles ──────────────────────────────────────
+function spawnCoinParticles(position) {
+  for (let i = 0; i < 6; i++) {
+    const size = 3 + Math.random() * 3;
+    const geo = new THREE.SphereGeometry(size, 6, 6);
+    const mat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.8, roughness: 0.2 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(position);
+    const angle = (Math.PI * 2 * i) / 6;
+    const speed = 0.5 + Math.random() * 0.5;
+    mesh.userData.vx = Math.cos(angle) * speed;
+    mesh.userData.vy = Math.sin(angle) * speed + 0.3;
+    mesh.userData.vz = (Math.random() - 0.5) * 0.3;
+    mesh.userData.life = 30;
+    scene.add(mesh);
+    particles.push(mesh);
+  }
+}
+// ─── Spawn Shovel ──────────────────────────────────────────────
+function spawnShovel() {
+  if (!shovelTemplate) return;
+  if (shovels.length >= MAX_SHOVELS) return;
+  const x = (Math.random() - 0.5) * 3000;
+  let avgZ = 0;
+  for (const p of players) avgZ += p.group.position.z;
+  avgZ /= players.length;
+  const z = avgZ - 400 - Math.random() * 2000;
+  const shovel = shovelTemplate.clone(true);
+  shovel.position.set(x, 0, z);
+  shovel.traverse(child => {
+    if (child.isMesh) {
+      child.material = new THREE.MeshBasicMaterial({
+        color: 0xff00aa,
+        side: THREE.DoubleSide
+      });
+    }
+  });
+  shovel.userData.rotSpeed = 0.5 + Math.random() * 0.5;
+  scene.add(shovel);
+  shovel.updateMatrixWorld(true);
+  const shovelBox = new THREE.Box3().setFromObject(shovel);
+  shovel.position.y = -shovelBox.min.y;
+  shovels.push(shovel);
+}
+// ─── Jump Helper ────────────────────────────────────────────────
+function doJump(playerIndex) {
+  const p = players[playerIndex];
+  if (!p || p.isDancing) return;
+  if (!p.onGround) return;
+  if (!p.jumpAction) return;
+  p.vy = JUMP_VY;
+  p.jumping = true;
+  p.jumpTimer = 0;
+  p.jumpDuration = p.jumpAction._clip.duration;
+  if (p.walkAction) p.walkAction.stop();
+  if (p.runAction) p.runAction.stop();
+  p.runAction.reset().play();
+  p.jumpAction.reset();
+  p.jumpAction.clampWhenFinished = true;
+  p.jumpAction.loop = THREE.LoopOnce;
+  p.runAction.fadeOut(0.1);
+  p.jumpAction.fadeIn(0.1).play();
+  p.animState = 'jump';
+}
+// ─── Dance ──────────────────────────────────────────────────────
+function startDance(playerIndex) {
+  const p = players[playerIndex];
+  if (!p || p.isDancing) return;
+  p.isDancing = true;
+  if (p.walkAction) p.walkAction.fadeOut(0.2);
+  if (p.runAction) p.runAction.fadeOut(0.2);
+  if (p.jumpAction) p.jumpAction.stop();
+  if (p.jumping) { p.jumping = false; p.vy = 0; }
+  p.danceAction.reset();
+  p.danceAction.loop = THREE.LoopRepeat;
+  p.danceAction.fadeIn(0.2).play();
+  p.animState = 'dance';
+  const color = playerIndex === 0 ? '#ff00aa' : '#00ffaa';
+  p.danceDiv = document.createElement('div');
+  p.danceDiv.textContent = 'DANCE';
+  p.danceDiv.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: ${playerIndex === 0 ? '25%' : '75%'};
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-size: clamp(36px, 6vw, 80px);
+    color: ${color};
+    text-shadow: 0 0 20px ${color};
+    z-index: 100;
+    pointer-events: none;
+    animation: pulse 1s ease-in-out infinite;
+  `;
+  document.body.appendChild(p.danceDiv);
+}
+function stopDance(playerIndex) {
+  const p = players[playerIndex];
+  if (!p || !p.isDancing) return;
+  p.isDancing = false;
+  if (p.danceAction) p.danceAction.fadeOut(0.2);
+  const inp = getInput(playerIndex + 1);
+  const isMoving = inp.up || inp.down || inp.left || inp.right;
+  if (isMoving && p.runAction) {
+    p.runAction.reset().fadeIn(0.2).play();
+    p.animState = 'run';
+    p.prevMoving = true;
+  } else if (p.walkAction) {
+    p.walkAction.reset().fadeIn(0.2).play();
+    p.animState = 'walk';
+    p.prevMoving = false;
+  }
+  if (p.danceDiv) {
+    p.danceDiv.remove();
+    p.danceDiv = null;
+  }
+}
+// ─── Player Count Selection ────────────────────────────────────
+function confirmPlayerCount(count) {
+  if (!playerSelectActive) return;
+  playerSelectActive = false;
+  playerCount = count;
+  document.getElementById('playerSelectScreen').classList.add('hidden');
+  setupPlayers();
+  charSelectActive = true;
+  document.getElementById('characterSelectScreen').classList.remove('hidden');
+  initCharSelectionUI();
+}
+document.querySelectorAll('.player-select-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    confirmPlayerCount(parseInt(btn.dataset.players));
+  });
+});
+// ─── Character Selection (Per-Gamepad) ──────────────────────
+let p1Confirmed = false, p2Confirmed = false;
+let p1Selection = 0, p2Selection = 0;
+let _p1Left = false, _p1Right = false, _p1Confirm = false;
+let _p2Left = false, _p2Right = false, _p2Confirm = false;
+const previewStates = {};
+function createCharPreview(canvasId, charKey) {
+  // Clean up old preview for this canvas
+  if (previewStates[canvasId]) {
+    const old = previewStates[canvasId];
+    old.renderer.dispose();
+    if (old.rafId) cancelAnimationFrame(old.rafId);
+    delete previewStates[canvasId];
+  }
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(320, 320);
+  renderer.setPixelRatio(1);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 320/320, 0.1, 10000);
+  camera.position.set(0, 150, 300);
+  camera.lookAt(0, 80, 0);
+  scene.add(new THREE.AmbientLight(0xffffff, 3));
+  const dir = new THREE.DirectionalLight(0xffffff, 2);
+  dir.position.set(5, 10, 5);
+  scene.add(dir);
+  const state = { renderer, scene, camera, model: null, mixer: null, rafId: null };
+  previewStates[canvasId] = state;
+  const charData = CHARACTERS[charKey];
+  if (!charData) return;
+  const modelLoader = new GLTFLoader();
+  modelLoader.load(charData.base, (gltf) => {
+    const model = gltf.scene;
+    scene.add(model);
+    model.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const height = size.y;
+    model.scale.setScalar(height > 0 ? 103 / height * height : 103);
+    model.scale.setScalar(103);
+    box.setFromObject(model);
+    model.position.y = -box.min.y;
+    state.model = model;
+    // Load walk animation
+    const animLoader = new GLTFLoader();
+    animLoader.load(charData.walk, (animGltf) => {
+      const clip = animGltf.animations[0];
+      if (!clip) return;
+      clip.tracks = clip.tracks.filter(t => !t.name.includes('.position'));
+      const mixer = new THREE.AnimationMixer(model);
+      state.mixer = mixer;
+      mixer.clipAction(clip).play();
+    }, undefined, () => {});
+  }, undefined, () => {});
+  const clock = new THREE.Clock();
+  function previewLoop() {
+    if (!canvas.isConnected) {
+      if (state.rafId) cancelAnimationFrame(state.rafId);
+      return;
+    }
+    state.rafId = requestAnimationFrame(previewLoop);
+    if (state.mixer) state.mixer.update(clock.getDelta());
+    if (state.model) state.model.rotation.y += 0.005;
+    renderer.render(scene, camera);
+  }
+  previewLoop();
+}
+function updateCharDisplay(player) {
+  const selection = player === 1 ? p1Selection : p2Selection;
+  const charEntry = CHAR_LIST[selection];
+  if (!charEntry) return;
+  const nameEl = document.getElementById('charName' + player);
+  const readyEl = document.getElementById('charReady' + player);
+  if (nameEl) nameEl.textContent = charEntry.name;
+  if (readyEl) readyEl.style.opacity = '0';
+  createCharPreview('charPreview' + player, charEntry.key);
+}
+function lockCharSelection(player, index) {
+  const charEntry = CHAR_LIST[index];
+  if (!charEntry) return;
+  const pi = player - 1;
+  if (players[pi]) {
+    players[pi].characterKey = charEntry.key;
+  }
+  // Show READY indicator
+  const readyEl = document.getElementById('charReady' + player);
+  if (readyEl) readyEl.style.opacity = '1';
+}
+function checkBothConfirmed() {
+  console.log('checkBothConfirmed called, p1:', p1Confirmed, 'p2:', p2Confirmed, 'count:', playerCount);
+  const bothDone = (playerCount === 1 && p1Confirmed) || (playerCount === 2 && p1Confirmed && p2Confirmed);
+  console.log('bothDone:', bothDone);
+  if (!bothDone) return;
+  clearInterval(selectionGamepadInterval);
+  document.getElementById('characterSelectScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'flex';
+  console.log('starting character load for:', CHARACTERS[players[0]?.characterKey]?.name, CHARACTERS[players[1]?.characterKey]?.name);
+  loadAllCharacters();
+}
+function initCharSelectionUI() {
+  // Log which gamepads are at indices 0 and 1 (debug gamepad index shift)
+  console.log('gp1:', navigator.getGamepads()[0]?.id);
+  console.log('gp2:', navigator.getGamepads()[1]?.id);
+  // Reset tracking vars
+  p1Confirmed = false; p2Confirmed = false;
+  p1Selection = 0; p2Selection = 0;
+  _p1Left = false; _p1Right = false; _p1Confirm = false;
+  _p2Left = false; _p2Right = false; _p2Confirm = false;
+  // Show/hide P2 column
+  const col2 = document.getElementById('charCol2');
+  if (col2) {
+    col2.style.display = playerCount >= 2 ? 'flex' : 'none';
+  }
+  // Update hint text
+  const hint = document.getElementById('charSelectHint');
+  if (playerCount >= 2) {
+    hint.textContent = 'P1: ← → + START  ·  P2: J/L + N';
+  } else {
+    hint.textContent = '← → to select · START to confirm';
+  }
+  // Update displays for each column
+  for (let p = 1; p <= playerCount; p++) {
+    updateCharDisplay(p);
+    const readyEl = document.getElementById('charReady' + p);
+    if (readyEl) readyEl.style.opacity = '0';
+  }
+  // If 1 player, hide P2 ready indicator
+  const ready2 = document.getElementById('charReady2');
+  if (ready2 && playerCount < 2) ready2.style.opacity = '0';
+  // Arrow click handlers
+  for (let p = 1; p <= 2; p++) {
+    const leftArrow = document.getElementById('arrow' + p + 'Left');
+    const rightArrow = document.getElementById('arrow' + p + 'Right');
+    if (leftArrow) {
+      leftArrow.onclick = () => {
+        if (!charSelectActive) return;
+        if (p > playerCount) return;
+        const sel = p === 1 ? p1Selection : p2Selection;
+        const conf = p === 1 ? p1Confirmed : p2Confirmed;
+        if (conf) return;
+        const newSel = (sel - 1 + CHAR_LIST.length) % CHAR_LIST.length;
+        if (p === 1) { p1Selection = newSel; updateCharDisplay(1); }
+        else { p2Selection = newSel; updateCharDisplay(2); }
+      };
+    }
+    if (rightArrow) {
+      rightArrow.onclick = () => {
+        if (!charSelectActive) return;
+        if (p > playerCount) return;
+        const sel = p === 1 ? p1Selection : p2Selection;
+        const conf = p === 1 ? p1Confirmed : p2Confirmed;
+        if (conf) return;
+        const newSel = (sel + 1) % CHAR_LIST.length;
+        if (p === 1) { p1Selection = newSel; updateCharDisplay(1); }
+        else { p2Selection = newSel; updateCharDisplay(2); }
+      };
+    }
+  }
+}
+// ─── Selection Gamepad Polling (separate interval for pre-gameplay screens) ──
+let selectedPlayerCount = 1;
+function updatePlayerSelectHighlight() {
+  document.getElementById('btn1Player').style.border = selectedPlayerCount === 1 ? '4px solid #ff00aa' : '2px solid #ff00aa';
+  document.getElementById('btn1Player').style.boxShadow = selectedPlayerCount === 1 ? '0 0 20px #ff00aa' : 'none';
+  document.getElementById('btn2Player').style.border = selectedPlayerCount === 2 ? '4px solid #ff00aa' : '2px solid #ff00aa';
+  document.getElementById('btn2Player').style.boxShadow = selectedPlayerCount === 2 ? '0 0 20px #ff00aa' : 'none';
+}
+updatePlayerSelectHighlight();
+window.addEventListener('gamepadconnected', (e) => {
+  console.log('gamepad connected:', e.gamepad.id);
+});
+let _selLeft = false, _selRight = false, _selConfirm = false;
+let selectionGamepadInterval = setInterval(() => {
+  const gpList = navigator.getGamepads();
+  let anyLeft = false, anyRight = false, anyConfirm = false;
+  for (let i = 0; i < gpList.length; i++) {
+    const gp = gpList[i];
+    if (!gp) continue;
+    if (gp.axes[0] < -0.5 || gp.buttons[14]?.pressed) anyLeft = true;
+    if (gp.axes[0] > 0.5 || gp.buttons[15]?.pressed) anyRight = true;
+    if (gp.buttons[9]?.pressed || gp.buttons[8]?.pressed || gp.buttons[0]?.pressed || gp.buttons[2]?.pressed || gp.buttons[3]?.pressed) anyConfirm = true;
+  }
+  const left = anyLeft;
+  const right = anyRight;
+  const confirm = anyConfirm;
+  if (playerSelectActive) {
+    if (left && !_selLeft) { selectedPlayerCount = 1; updatePlayerSelectHighlight(); }
+    if (right && !_selRight) { selectedPlayerCount = 2; updatePlayerSelectHighlight(); }
+    if (confirm && !_selConfirm) {
+      document.getElementById(selectedPlayerCount === 1 ? 'btn1Player' : 'btn2Player')?.click();
+    }
+  }
+  if (charSelectActive) {
+    const maxIdx = CHAR_LIST.length - 1;
+    // P1 = gamepad 0
+    const gp1 = gpList[0];
+    if (gp1) {
+      const left1 = gp1.axes[0] < -0.5 || gp1.buttons[14]?.pressed;
+      const right1 = gp1.axes[0] > 0.5 || gp1.buttons[15]?.pressed;
+      const confirm1 = gp1.buttons[9]?.pressed || gp1.buttons[8]?.pressed || gp1.buttons[0]?.pressed || gp1.buttons[1]?.pressed || gp1.buttons[2]?.pressed || gp1.buttons[3]?.pressed;
+      gp1.buttons.forEach((btn, i) => { if (btn.pressed) console.log('SELECTION BTN:', i); });
+      if (left1 && !_p1Left && !p1Confirmed) { p1Selection = (p1Selection - 1 + CHAR_LIST.length) % CHAR_LIST.length; updateCharDisplay(1); }
+      if (right1 && !_p1Right && !p1Confirmed) { p1Selection = (p1Selection + 1) % CHAR_LIST.length; updateCharDisplay(1); }
+      if (confirm1 && !_p1Confirm && !p1Confirmed) { p1Confirmed = true; lockCharSelection(1, p1Selection); checkBothConfirmed(); }
+      _p1Left = left1; _p1Right = right1; _p1Confirm = confirm1;
+    }
+    // P2 = gamepad 1
+    const gp2 = gpList[1];
+    if (!gp2 && playerCount >= 2 && charSelectActive) {
+      console.warn('gp2 still undefined after interval tick');
+    }
+    if (gp2 && playerCount >= 2) {
+      const left2 = gp2.axes[0] < -0.5 || gp2.buttons[14]?.pressed;
+      const right2 = gp2.axes[0] > 0.5 || gp2.buttons[15]?.pressed;
+      const confirm2 = gp2.buttons[9]?.pressed || gp2.buttons[8]?.pressed || gp2.buttons[0]?.pressed || gp2.buttons[1]?.pressed || gp2.buttons[2]?.pressed || gp2.buttons[3]?.pressed;
+      gp2.buttons.forEach((btn, i) => { if (btn.pressed) console.log('SELECTION BTN:', i); });
+      if (left2 && !_p2Left && !p2Confirmed) { p2Selection = (p2Selection - 1 + CHAR_LIST.length) % CHAR_LIST.length; updateCharDisplay(2); }
+      if (right2 && !_p2Right && !p2Confirmed) { p2Selection = (p2Selection + 1) % CHAR_LIST.length; updateCharDisplay(2); }
+      if (confirm2 && !_p2Confirm && !p2Confirmed) { p2Confirmed = true; lockCharSelection(2, p2Selection); checkBothConfirmed(); }
+      _p2Left = left2; _p2Right = right2; _p2Confirm = confirm2;
+    }
+  }
+  _selLeft = left;
+  _selRight = right;
+  _selConfirm = confirm;
+}, 100);
+// ─── Gamepad Start/Check (in-game) ──────────────────────────
+function checkGamepadStart() {
+  const gamepads = navigator.getGamepads();
+  for (let gi = 0; gi < 4; gi++) {
+    const gp = gamepads[gi];
+    if (!gp) continue;
+    const startPressed = gp.buttons[9]?.pressed || gp.buttons[8]?.pressed || gp.buttons[10]?.pressed;
+    if (startPressed && !game.started) {
+      startGameplay();
+      break;
+    }
+    const selectPressed = gp.buttons[8]?.pressed || gp.buttons[9]?.pressed;
+    if (selectPressed && game.gameOver) {
+      location.reload();
+      break;
+    }
+  }
+}
+// ─── Unified Input Helper ──────────────────────────────────────
+function getInput(player) {
+  const gp = navigator.getGamepads()[player - 1];
+  const gpUp = gp ? (gp.axes[1] < -0.3 || gp.buttons[12]?.pressed) : false;
+  const gpDown = gp ? (gp.axes[1] > 0.3 || gp.buttons[13]?.pressed) : false;
+  const gpLeft = gp ? (gp.axes[0] < -0.3 || gp.buttons[14]?.pressed) : false;
+  const gpRight = gp ? (gp.axes[0] > 0.3 || gp.buttons[15]?.pressed) : false;
+  const gpJump = gp ? (gp.buttons[2]?.pressed || gp.buttons[3]?.pressed) : false;
+  const gpDance = gp ? gp.buttons[0]?.pressed : false;
+  const gpSpell = gp ? (gp.buttons[5]?.pressed) : false;
+  if (player === 1) {
+    const gp = navigator.getGamepads()[0];
+    const gpUp = gp ? gp.axes[1] < -0.5 || gp.buttons[12]?.pressed === true : false;
+    const gpDown = gp ? gp.axes[1] > 0.3 || gp.buttons[13]?.pressed === true : false;
+    const gpLeft = gp ? gp.axes[0] < -0.3 || gp.buttons[14]?.pressed === true : false;
+    const gpRight = gp ? gp.axes[0] > 0.3 || gp.buttons[15]?.pressed === true : false;
+    const gpJump = gp ? gp.buttons[2]?.pressed === true || gp.buttons[3]?.pressed === true : false;
+    return {
+      up: keysDown.has('ArrowUp') || keysDown.has('KeyW') || gpUp === true,
+      down: keysDown.has('ArrowDown') || keysDown.has('KeyS') || gpDown === true,
+      left: keysDown.has('ArrowLeft') || keysDown.has('KeyA') || gpLeft === true,
+      right: keysDown.has('ArrowRight') || keysDown.has('KeyD') || gpRight === true,
+      jump: keysDown.has('Space') || gpJump === true,
+      dance: keysDown.has('KeyF') || (gp ? gp.buttons[0]?.pressed === true : false),
+      spell: keysDown.has('KeyQ') || (gp ? gp.buttons[5]?.pressed === true : false)
+    };
+  }
+  if (player === 2) return {
+    up: keysDown.has('KeyI') || gpUp,
+    down: keysDown.has('KeyK') || gpDown,
+    left: keysDown.has('KeyJ') || gpLeft,
+    right: keysDown.has('KeyL') || gpRight,
+    jump: keysDown.has('KeyN') || gpJump,
+    dance: keysDown.has('KeyM') || gpDance,
+    spell: keysDown.has('KeyU') || gpSpell
+  };
+}
+// ─── Movement check helper ──────────────────────────────────────
+function isPlayerMoving(p) {
+  const inp = getInput(p.index + 1);
+  return inp.up || inp.down || inp.left || inp.right;
+}
+// ─── Keyboard Event Handlers ───────────────────────────────────
+function onKeyDown(e) {
+  // ── Player Select Mode ──
+  if (playerSelectActive) {
+    if (e.key === '1') {
+      confirmPlayerCount(1);
+      e.preventDefault();
+    } else if (e.key === '2') {
+      confirmPlayerCount(2);
+      e.preventDefault();
+    }
+    return;
+  }
+  // ── Character Selection Mode ──
+  if (charSelectActive) {
+    // P1: Arrow keys + Enter
+    if (e.key === 'ArrowLeft') {
+      if (!p1Confirmed) { p1Selection = (p1Selection - 1 + CHAR_LIST.length) % CHAR_LIST.length; updateCharDisplay(1); }
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      if (!p1Confirmed) { p1Selection = (p1Selection + 1) % CHAR_LIST.length; updateCharDisplay(1); }
+      e.preventDefault();
+    } else if (e.key === 'Enter') {
+      if (!p1Confirmed) { p1Confirmed = true; lockCharSelection(1, p1Selection); checkBothConfirmed(); }
+      e.preventDefault();
+    } else if (e.key === ' ') {
+      if (playerCount === 1 && !p1Confirmed) {
+        p1Confirmed = true; lockCharSelection(1, p1Selection); checkBothConfirmed();
+        e.preventDefault();
+      }
+    }
+    // P2: I/J/K/L + N/M (only in 2-player mode)
+    if (playerCount >= 2) {
+      if (e.key === 'j' || e.key === 'J') {
+        if (!p2Confirmed) { p2Selection = (p2Selection - 1 + CHAR_LIST.length) % CHAR_LIST.length; updateCharDisplay(2); }
+        e.preventDefault();
+      } else if (e.key === 'l' || e.key === 'L') {
+        if (!p2Confirmed) { p2Selection = (p2Selection + 1) % CHAR_LIST.length; updateCharDisplay(2); }
+        e.preventDefault();
+      } else if (e.key === 'n' || e.key === 'N') {
+        if (!p2Confirmed) { p2Confirmed = true; lockCharSelection(2, p2Selection); checkBothConfirmed(); }
+        e.preventDefault();
+      }
+    }
+    return;
+  }
+  if (game.gameOver) return;
+  if (!game.started) {
+    startGameplay();
+  }
+  // ── Track keys for unified input ──
+  keysDown.add(e.code);
+  // Keep legacy keys for animation state helpers
+  if (players[0]) {
+    if (e.key === 'ArrowUp') players[0].keys.up = true;
+    if (e.key === 'ArrowDown') players[0].keys.down = true;
+    if (e.key === 'ArrowLeft') players[0].keys.left = true;
+    if (e.key === 'ArrowRight') players[0].keys.right = true;
+    if (e.key === 'w' || e.key === 'W') players[0].keys.up = true;
+    if (e.key === 's' || e.key === 'S') players[0].keys.down = true;
+    if (e.key === 'a' || e.key === 'A') players[0].keys.left = true;
+    if (e.key === 'd' || e.key === 'D') players[0].keys.right = true;
+  }
+  if (players.length >= 2 && players[1]) {
+    if (e.key === 'i' || e.key === 'I') players[1].keys.up = true;
+    if (e.key === 'k' || e.key === 'K') players[1].keys.down = true;
+    if (e.key === 'j' || e.key === 'J') players[1].keys.left = true;
+    if (e.key === 'l' || e.key === 'L') players[1].keys.right = true;
+  }
+  // Prevent default for gameplay keys
+  const gameplayKeys = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','w','W','s','S','a','A','d','D','i','I','k','K','j','J','l','L','n','N','m','M','f','F','q','Q','u','U'];
+  if (gameplayKeys.includes(e.key)) {
+    e.preventDefault();
+  }
+}
+function onKeyUp(e) {
+  // ── Remove from unified keysDown ──
+  keysDown.delete(e.code);
+  // ── P1 Keys (legacy) ──
+  if (e.key === 'ArrowUp') { if (players[0]) players[0].keys.up = false; }
+  else if (e.key === 'ArrowDown') { if (players[0]) players[0].keys.down = false; }
+  else if (e.key === 'ArrowLeft') { if (players[0]) players[0].keys.left = false; }
+  else if (e.key === 'ArrowRight') { if (players[0]) players[0].keys.right = false; }
+  else if (e.key === 'w' || e.key === 'W') { if (players[0]) players[0].keys.up = false; }
+  else if (e.key === 's' || e.key === 'S') { if (players[0]) players[0].keys.down = false; }
+  else if (e.key === 'a' || e.key === 'A') { if (players[0]) players[0].keys.left = false; }
+  else if (e.key === 'd' || e.key === 'D') { if (players[0]) players[0].keys.right = false; }
+  // ── P2 Keys (legacy) ──
+  if (players.length >= 2) {
+    if (e.key === 'i' || e.key === 'I') { players[1].keys.up = false; }
+    else if (e.key === 'k' || e.key === 'K') { players[1].keys.down = false; }
+    else if (e.key === 'j' || e.key === 'J') { players[1].keys.left = false; }
+    else if (e.key === 'l' || e.key === 'L') { players[1].keys.right = false; }
+  }
+}
+function onClick() {
+  if (playerSelectActive || charSelectActive) return;
+  if (game.gameOver) return;
+  if (!game.started) {
+    startGameplay();
+  }
+  doJump(0);
+}
+function setupEventListeners() {
+  document.removeEventListener('keydown', onKeyDown);
+  document.removeEventListener('keyup', onKeyUp);
+  document.removeEventListener('click', onClick);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup', onKeyUp);
+  document.addEventListener('click', onClick);
+}
+setupEventListeners();
+// ─── Start Gameplay ─────────────────────────────────────────────
+function startGameplay() {
+  if (game.started) return;
+  game.started = true;
+  hideLoadingScreen();
+  for (const p of players) {
+    if (p.isDancing) {
+      if (p.danceAction) p.danceAction.fadeOut(0.2);
+      p.isDancing = false;
+      if (p.walkAction) {
+        p.walkAction.reset().fadeIn(0.2).play();
+      }
+      p.animState = 'walk';
+      p.prevMoving = false;
+    }
+  }
+  console.log('gameplay started');
+}
+// ─── Restart ───────────────────────────────────────────────────
+document.getElementById('restartBtn').addEventListener('click', () => {
+  location.reload();
+});
+// ─── Resize ────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  camera1.aspect = (w / 2) / h;
+  camera1.updateProjectionMatrix();
+  camera2.aspect = (w / 2) / h;
+  camera2.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+// ─── Update UI ────────────────────────────────────────────────
+function updateUI() {
+  document.getElementById('scoreDisplay').textContent = players[0]?.score ?? 0;
+  document.getElementById('livesDisplay').textContent = game.lives > 0 ? '❤️'.repeat(game.lives) : '💀';
+  if (playerCount === 2 && players[1]) {
+    document.getElementById('scoreDisplay2').textContent = players[1].score;
+    document.getElementById('livesDisplay2').textContent = game.lives2 > 0 ? '❤️'.repeat(game.lives2) : '💀';
+  }
+}
+// ─── Collection Text ──────────────────────────────────────────
+function spawnSpellParticles(position) {
+  for (let i = 0; i < 20; i++) {
+    const size = 3 + Math.random() * 5;
+    const geo = new THREE.SphereGeometry(size, 6, 6);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff00aa });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(position);
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 2;
+    mesh.userData.vx = Math.cos(angle) * speed;
+    mesh.userData.vy = Math.sin(angle) * speed + 0.5;
+    mesh.userData.vz = (Math.random() - 0.5) * speed;
+    mesh.userData.life = 40 + Math.random() * 20;
+    scene.add(mesh);
+    particles.push(mesh);
+  }
+}
+function showSpellText(player) {
+  const el = document.createElement('div');
+  el.textContent = 'HECHIZO POP';
+  const isP2 = player === 2;
+  el.style.cssText = `
+    position: fixed;
+    top: 35%;
+    left: ${isP2 ? '75%' : '25%'};
+    font-size: clamp(36px, 6vw, 80px);
+    color: #ff00aa;
+    font-weight: bold;
+    font-family: 'Comic Sans MS', cursive;
+    text-shadow: 0 0 30px #ff00aa, 0 0 60px #ff00aa;
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUp 2s ease-out forwards;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+function castSpell(pi) {
+  const p = players[pi];
+  if (!p || p.isCastingSpell || !p.spellAction) return;
+  if (p.spellCooldown > 0) return;
+  p.isCastingSpell = true;
+  p.spellCooldown = 15;
+  // Play spell animation
+  if (p.walkAction) p.walkAction.fadeOut(0.2);
+  if (p.runAction) p.runAction.fadeOut(0.2);
+  if (p.jumpAction) p.jumpAction.stop();
+  if (p.danceAction) p.danceAction.stop();
+  if (p.jumping) { p.jumping = false; p.vy = 0; }
+  p.isDancing = false;
+  if (p.danceDiv) { p.danceDiv.remove(); p.danceDiv = null; }
+  p.spellAction.reset();
+  p.spellAction.loop = THREE.LoopOnce;
+  p.spellAction.clampWhenFinished = true;
+  p.spellAction.fadeIn(0.2).play();
+  p.animState = 'spell';
+  // Schedule animation end: crossfade back to run/walk after clip duration
+  const dur = p.spellAction._clip.duration;
+  setTimeout(() => {
+    if (!p || p.lives <= 0) return;
+    p.isCastingSpell = false;
+    if (p.spellAction) p.spellAction.fadeOut(0.3);
+    const inp = getInput(pi + 1);
+    const moving = inp.up || inp.down || inp.left || inp.right;
+    if (moving && p.runAction) {
+      p.runAction.reset().fadeIn(0.3).play();
+      p.animState = 'run';
+    } else if (p.walkAction) {
+      p.walkAction.reset().fadeIn(0.3).play();
+      p.animState = 'walk';
+    }
+  }, dur * 1000);
+  // Spell effects
+  showSpellText(pi + 1);
+  spawnSpellParticles(p.group.position.clone());
+  if (!game.level2Active) {
+    // Level 1: remove all shovels, block for 8s
+    for (const s of shovels) { scene.remove(s); }
+    shovels.length = 0;
+    game.shovelBlockTimer = 8;
+    console.log('spell cleared shovels, blocked for 8s');
+  } else {
+    // Level 2: remove all cones, block for 6s
+    for (const cone of l2Cones) { scene.remove(cone); }
+    l2Cones.length = 0;
+    l2ConeBlockTimer = 6;
+    console.log('spell cleared cones, blocked for 6s');
+  }
+}
+function showFloatingText(player, text) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  const isP2 = player === 2;
+  el.style.cssText = `
+    position: fixed;
+    top: 40%;
+    left: ${isP2 ? '75%' : '25%'};
+    font-size: clamp(24px, 4vw, 48px);
+    color: #ff00aa;
+    font-weight: bold;
+    font-family: 'Comic Sans MS', cursive;
+    text-shadow: 0 0 20px #ff00aa;
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUp 1.5s ease-out forwards;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+function showCollectionText(player) {
+  const el = document.createElement('div');
+  el.textContent = '\u00a1Soy una rana!';
+  const isP2 = player === 2;
+  el.style.cssText = `
+    position: fixed;
+    top: 40%;
+    left: ${isP2 ? '75%' : '25%'};
+    font-size: clamp(28px, 5vw, 64px);
+    color: #ff00aa;
+    font-weight: bold;
+    font-family: 'Comic Sans MS', cursive;
+    text-shadow: 0 0 20px #ff00aa;
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUp 1.5s ease-out forwards;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+// ─── Smooth Angle Lerp ─────────────────────────────────────────
+function lerpAngle(current, target, t) {
+  let diff = target - current;
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return current + diff * t;
+}
+// ─── Game Loop ─────────────────────────────────────────────────
+function update() {
+  const delta = clock.getDelta();
+  const dt = delta * 60;
+  game.elapsed += delta;
+  frameCount++;
+  // Animate water texture
+  if (waterTex) {
+    waterTex.offset.y -= 0.0003 * dt;
+  }
+  // ── Check Gamepad Start/Select ──
+  checkGamepadStart();
+  if (!game.started || game.gameOver) {
+    if (!game.started) {
+      // Loading screen: fixed cameras
+      camera1.position.lerp(LOADING_CAM_POS, 0.05);
+      camera1.lookAt(0, 150, 0);
+      camera2.position.copy(camera1.position);
+      camera2.lookAt(0, 150, 0);
+      // Play dance on loop during loading screen for all ready players
+      for (const p of players) {
+        if (p.danceAction && !p.isDancing) {
+          if (p.walkAction) p.walkAction.stop();
+          if (p.runAction) p.runAction.stop();
+          if (p.jumpAction) p.jumpAction.stop();
+          if (p.jumping) { p.jumping = false; p.vy = 0; }
+          p.danceAction.reset();
+          p.danceAction.loop = THREE.LoopRepeat;
+          p.danceAction.fadeIn(0.2).play();
+          p.isDancing = true;
+          p.animState = 'dance';
+        }
+      }
+    } else {
+      // Game over: each camera follows its player
+      updateSplitCameras();
+    }
+    for (const p of players) {
+      if (p.mixer) p.mixer.update(delta);
+    }
+    renderSplitScreen();
+    requestAnimationFrame(update);
+    return;
+  }
+  // ── Level 2 Transition (pause gameplay) ──
+  if (game.level2Transition) {
+    for (const p of players) {
+      if (p.mixer) p.mixer.update(delta);
+    }
+    updateSplitCameras();
+    renderSplitScreen();
+    requestAnimationFrame(update);
+    return;
+  }
+  // ── Level 2 Active ──
+  if (game.level2Active) {
+    updateLevel2(delta, dt);
+    renderSplitScreen();
+    requestAnimationFrame(update);
+    return;
+  }
+  // ── Level 2 Trigger Check (score >= 7) ──
+  if (!game.level2Triggered && players.some(p => p.score >= 7)) {
+    game.level2Triggered = true;
+    triggerLevel2Transition();
+    renderSplitScreen();
+    requestAnimationFrame(update);
+    return;
+  }
+  // ── Level 3 Intro ──
+  if (l3IntroShowing) {
+    for (const p of players) {
+      if (p.mixer) p.mixer.update(delta);
+    }
+    updateSplitCameras();
+    renderSplitScreen();
+    requestAnimationFrame(update);
+    return;
+  }
+  // ── Level 3 Active ──
+  if (l3Active) {
+    updateLevel3(delta, dt);
+    renderSplitScreen();
+    requestAnimationFrame(update);
+    return;
+  }
+  // ── Player Movement ──
+  const in1 = getInput(1);
+  const in2 = getInput(2);
+  for (let pi = 0; pi < players.length; pi++) {
+    const p = players[pi];
+    const inp = pi === 0 ? in1 : in2;
+    if (p.lives <= 0) continue;
+    // ── Dance toggle ──
+    if (p.spellCooldown > 0) p.spellCooldown -= delta;
+    if (inp.spell && !p.isCastingSpell) {
+      castSpell(pi);
+    }
+    if (inp.dance && !p.isDancing && p.danceAction) {
+      startDance(pi);
+    } else if (!inp.dance && p.isDancing) {
+      stopDance(pi);
+    }
+    if (!p.isDancing && !p.isCastingSpell) {
+      const speed = 10;
+      let targetRotation = p.group.rotation.y;
+      if (inp.up) {
+        p.group.position.z -= speed;
+        targetRotation = Math.PI;
+      }
+      if (inp.down) {
+        p.group.position.z += speed;
+        targetRotation = 0;
+      }
+      if (inp.left) {
+        p.group.position.x -= speed;
+        targetRotation = -Math.PI / 2;
+      }
+      if (inp.right) {
+        p.group.position.x += speed;
+        targetRotation = Math.PI / 2;
+      }
+      p.group.position.x = Math.max(-3500, Math.min(3500, p.group.position.x));
+      p.group.position.z = Math.max(-3500, Math.min(3500, p.group.position.z));
+      p.group.rotation.y += (targetRotation - p.group.rotation.y) * 0.15;
+      // ── Jump (edge-triggered) ──
+      if (inp.jump && !p.jumpButtonPressed && p.onGround && !p.jumping) {
+        doJump(pi);
+      }
+      p.jumpButtonPressed = inp.jump;
+      // ── Player Jump Physics ──
+      if (p.jumping) {
+        p.group.position.x += Math.sin(p.group.rotation.y) * 8;
+        p.group.position.z += Math.cos(p.group.rotation.y) * 8;
+        p.jumpTimer += delta;
+        p.vy -= GRAVITY * dt;
+        p.y += p.vy * dt;
+        if (p.y < GROUND_Y && p.jumpTimer < p.jumpDuration) {
+          p.y = 0;
+          p.vy = 0;
+        }
+        if (p.y <= GROUND_Y && p.vy <= 0 && p.jumpTimer >= p.jumpDuration) {
+          p.y = 0;
+          p.vy = 0;
+          p.jumping = false;
+          if (p.animState === 'jump' && p.jumpAction) {
+            p.jumpAction.fadeOut(0.2);
+            const moving = inp.up || inp.down || inp.left || inp.right;
+            if (moving && p.runAction) {
+              p.runAction.reset().fadeIn(0.2).play();
+            } else if (p.walkAction) {
+              p.walkAction.reset().fadeIn(0.2).play();
+            }
+            p.prevMoving = moving;
+            p.animState = 'walk';
+          }
+        }
+      }
+      p.group.position.y = p.y;
+      // ── Ground Check ──
+      p.onGround = p.y <= GROUND_Y + 0.1;
+    }
+    // ── Animation (run vs walk) ──
+    if (p.animState !== 'jump' && !p.isDancing && !p.isCastingSpell) {
+      const moving = inp.up || inp.down || inp.left || inp.right;
+      if (moving && !p.prevMoving) {
+        if (p.walkAction) p.walkAction.fadeOut(0.2);
+        if (p.runAction) p.runAction.reset().fadeIn(0.2).play();
+        p.animState = 'run';
+      } else if (!moving && p.prevMoving) {
+        if (p.runAction) p.runAction.fadeOut(0.2);
+        if (p.walkAction) p.walkAction.reset().fadeIn(0.2).play();
+        p.animState = 'walk';
+      }
+      p.prevMoving = moving;
+    }
+    // ── Mixer Update ──
+    if (p.mixer) p.mixer.update(delta);
+  }
+  // ── Spawning ──
+  if (game.started) {
+    const gameTime = game.elapsed;
+    if (gameTime - game.lastCoinSpawn > 0.8) {
+      spawnCoin();
+      game.lastCoinSpawn = gameTime;
+    }
+    if (shovelsStarted && game.shovelBlockTimer <= 0 && gameTime - game.lastShovelSpawn > 3) {
+      spawnShovel();
+      game.lastShovelSpawn = gameTime;
+    }
+  }
+  // ── Decrease block timers ──
+  if (game.shovelBlockTimer > 0) game.shovelBlockTimer -= delta;
+  // ── Update spell cooldown indicator ──
+  for (let pi = 0; pi < players.length; pi++) {
+    const p = players[pi];
+    const cdEl = document.getElementById('spellCD' + (pi + 1));
+    if (cdEl) {
+      if (p.spellCooldown <= 0) {
+        cdEl.textContent = pi === 0 ? 'Q: HECHIZO' : 'U: HECHIZO';
+        cdEl.style.opacity = '1';
+      } else {
+        const secs = Math.ceil(p.spellCooldown);
+        cdEl.textContent = (pi === 0 ? 'Q' : 'U') + ': 🔄 ' + secs + 's';
+        cdEl.style.opacity = '0.6';
+      }
+    }
+  }
+  // ── Update Coins ──
+  for (let i = coins.length - 1; i >= 0; i--) {
+    const coin = coins[i];
+    coin.rotation.y += 0.02;
+    coin.position.y = coin.userData.baseY + Math.sin(game.elapsed * 2 + coin.userData.bobOffset) * 15;
+    coin.position.y = Math.max(60, coin.position.y);
+    const shadow = coin.userData.shadowRef;
+    if (shadow) {
+      shadow.position.x = coin.position.x;
+      shadow.position.z = coin.position.z;
+    }
+    // Check collection against all players
+    let collected = false;
+    for (let pi = 0; pi < players.length; pi++) {
+      const p = players[pi];
+      if (p.lives <= 0) continue;
+      const dist = p.group.position.distanceTo(coin.position);
+      if (dist < 200) {
+        p.score++;
+        updateUI();
+        showCollectionText(pi + 1);
+        spawnCoinParticles(coin.position.clone());
+        // Check if any player's collective score reaches 3 to start shovels
+        const anyScoreReached3 = players.some(pl => pl.score >= 3);
+        if (anyScoreReached3 && !shovelsStarted) {
+          shovelsStarted = true;
+          const sign = document.createElement('div');
+          sign.style.cssText = `
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: clamp(32px, 6vw, 80px);
+            font-weight: bold;
+            color: #ff00aa;
+            text-shadow: 0 0 30px #ff00aa;
+            z-index: 9999;
+            pointer-events: none;
+            font-family: 'Comic Sans MS', cursive;
+            text-align: center;
+          `;
+          sign.textContent = '\u00a1HAY QUE ESQUIVAR LA PALA!';
+          document.body.appendChild(sign);
+          setTimeout(() => sign.remove(), 3000);
+        }
+        if (shadow) scene.remove(shadow);
+        scene.remove(coin);
+        coins.splice(i, 1);
+        collected = true;
+        break; // only one player collects
+      }
+    }
+  }
+  // ── Update Shovels ──
+  for (let i = shovels.length - 1; i >= 0; i--) {
+    const shovel = shovels[i];
+    shovel.rotation.y += 0.02;
+    for (let pi = 0; pi < players.length; pi++) {
+      const p = players[pi];
+      if (p.lives <= 0) continue;
+      const dist = p.group.position.distanceTo(shovel.position);
+      if (dist < 150 && !p.invincible) {
+        p.lives--;
+        if (pi === 0) game.lives = p.lives;
+        if (pi === 1) game.lives2 = p.lives;
+        updateUI();
+        p.invincible = true;
+        setTimeout(() => { p.invincible = false; }, 2000);
+        // Flash this player's character
+        let flashes = 0;
+        const flashInterval = setInterval(() => {
+          p.group.visible = !p.group.visible;
+          flashes++;
+          if (flashes > 10) {
+            clearInterval(flashInterval);
+            p.group.visible = true;
+          }
+        }, 150);
+        // Game over if this player reaches 0 lives
+        if (p.lives <= 0) {
+          if (pi === 0) game.lives = 0;
+          if (pi === 1) game.lives2 = 0;
+          game.gameOver = true;
+          showGameOver();
+        }
+        break;
+      }
+    }
+  }
+  // ── Update Particles ──
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.position.x += p.userData.vx * dt;
+    p.position.y += p.userData.vy * dt;
+    p.position.z += p.userData.vz * dt;
+    p.userData.vy -= 0.001 * dt;
+    p.userData.life -= dt;
+    if (p.userData.life <= 0) {
+      scene.remove(p);
+      p.geometry.dispose();
+      p.material.dispose();
+      particles.splice(i, 1);
+    }
+  }
+  // ── Camera Follow (Per Player) ──
+  updateSplitCameras();
+  renderSplitScreen();
+  requestAnimationFrame(update);
+}
+function updateSplitCameras() {
+  const lookY = 150;
+  if (players.length >= 1) {
+    const p1 = players[0].group.position;
+    _v3.set(p1.x, p1.y + 300, p1.z + 600);
+    camera1.position.lerp(_v3, 0.05);
+    camera1.lookAt(p1.x, p1.y + lookY, p1.z);
+  }
+  if (players.length >= 2) {
+    const p2 = players[1].group.position;
+    _v3.set(p2.x, p2.y + 300, p2.z + 600);
+    camera2.position.lerp(_v3, 0.05);
+    camera2.lookAt(p2.x, p2.y + lookY, p2.z);
+  }
+}
+function renderSplitScreen() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  // P1 - left half
+  renderer.setViewport(0, 0, Math.floor(w / 2), h);
+  renderer.setScissor(0, 0, Math.floor(w / 2), h);
+  renderer.setScissorTest(true);
+  renderer.render(scene, camera1);
+  // P2 - right half
+  renderer.setViewport(Math.ceil(w / 2), 0, Math.floor(w / 2), h);
+  renderer.setScissor(Math.ceil(w / 2), 0, Math.floor(w / 2), h);
+  renderer.render(scene, camera2);
+}
+function showGameOver() {
+  // Determine winner/loser if 2+ players
+  let maxScore = -1;
+  let winnerIdx = -1;
+  let tie = false;
+  if (players.length > 1) {
+    for (let pi = 0; pi < players.length; pi++) {
+      const score = players[pi].score;
+      if (score > maxScore) {
+        maxScore = score;
+        winnerIdx = pi;
+        tie = false;
+      } else if (score === maxScore) {
+        tie = true;
+      }
+    }
+  }
+  for (let pi = 0; pi < players.length; pi++) {
+    const overlayEl = document.getElementById('gameOverOverlay' + (pi + 1));
+    const resultEl = document.getElementById('gameoverResult' + (pi + 1));
+    const scoreEl = document.getElementById('gameoverScore' + (pi + 1));
+    if (!overlayEl || !resultEl || !scoreEl) continue;
+    const score = players[pi].score;
+    scoreEl.textContent = 'Score: ' + score;
+    if (players.length > 1) {
+      if (tie) {
+        resultEl.textContent = 'EMPATE!';
+      } else if (pi === winnerIdx) {
+        resultEl.textContent = 'GANADORA';
+      } else {
+        resultEl.textContent = 'PERDISTE';
+      }
+    } else {
+      resultEl.textContent = 'PERDISTE';
+    }
+    overlayEl.style.display = 'flex';
+  }
+  // Show restart button
+  const restartBtn = document.getElementById('restartBtn');
+  if (restartBtn) restartBtn.style.display = 'block';
+}
+// ─── Level 2 ─────────────────────────────────────────────────────
+function hideLevel1Scene() {
+  ground.visible = false;
+  ocean.visible = false;
+  sun.visible = false;
+  for (const c of coins) { scene.remove(c); }
+  for (const s of shovels) { scene.remove(s); }
+  for (const p of particles) { scene.remove(p); }
+  coins.length = 0;
+  shovels.length = 0;
+  particles.length = 0;
+  // Hide palm trees and umbrellas
+  scene.children.forEach(child => {
+    if (child.type === 'Group' || child.type === 'Mesh') {
+      // Hide palms by checking position (palms are scattered far)
+      if (Math.abs(child.position.x) > 500 || Math.abs(child.position.z) > 500) {
+        child.visible = false;
+      }
+    }
+  });
+}
+function triggerLevel2Transition() {
+  game.level = 2;
+  game.level2Transition = true;
+  game.level2Active = false;
+  l2OldBackground = scene.background.clone();
+  hideLevel1Scene();
+  // Remove any leftover Level 2 obstacles from scene
+  for (const obs of l2Cones) { scene.remove(obs); }
+  l2Cones.length = 0;
+  for (const c of l2Coins) { scene.remove(c); }
+  l2Coins.length = 0;
+  l2LastConeSpawn = 0;
+  l2LastCoinSpawn = 0;
+  l2ConeBlockTimer = 0;
+  // Reset player positions and lives
+  for (let i = 0; i < players.length; i++) {
+    const p = players[i];
+    p.group.position.set(i === 1 ? 100 : -100, 0, -500);
+    if (i === 0) level2StartZ = p.group.position.z;
+    p.y = 0;
+    p.vy = 0;
+    p.jumping = false;
+    p.onGround = true;
+    p.lives = 3;
+    p.invincible = false;
+    p.l2Speed = 0;
+    p.group.visible = true;
+    if (i === 0) game.lives = 3;
+    if (i === 1) game.lives2 = 3;
+    // Stop dancing
+    if (p.isDancing) {
+      p.isDancing = false;
+      if (p.danceDiv) { p.danceDiv.remove(); p.danceDiv = null; }
+    }
+  }
+  updateUI();
+  const overlay = document.getElementById('level2Transition');
+  if (overlay) overlay.style.display = 'flex';
+  console.log('Level 2 transition started');
+  setTimeout(() => {
+    if (overlay) overlay.style.display = 'none';
+    buildLevel2Scene();
+    game.level2Active = true;
+    game.level2Transition = false;
+    scene.background = new THREE.Color(0x1a0033);
+    if (playerCount === 1) {
+      createLevel2AI();
+    }
+    // Test note spawn
+    function spawnTestNote() {
+      if (l2CoinTemplate) {
+        const testNote = l2CoinTemplate.clone();
+        testNote.position.set(0, 100, players[0].group.position.z - 200);
+        testNote.userData.baseY = 100;
+        testNote.userData.bobOffset = Math.random() * Math.PI * 2;
+        scene.add(testNote);
+        l2Coins.push(testNote);
+        console.log('TEST NOTE spawned at 0, 100,', players[0].group.position.z - 200, 'template:', l2CoinTemplate);
+      } else {
+        console.log('TEST NOTE: template still null, retrying in 3s');
+        setTimeout(spawnTestNote, 3000);
+      }
+    }
+    spawnTestNote();
+    console.log('Level 2 started');
+  }, 3000);
+}
+function buildLevel2Scene() {
+  if (l2SceneBuilt) return;
+  l2SceneBuilt = true;
+  l2LastConeSpawn = game.elapsed;
+  l2LastCoinSpawn = game.elapsed;
+  // Load cone template
+  const coneLoader = new GLTFLoader();
+  coneLoader.load('assets/cone.glb', (gltf) => {
+    l2ConeTemplate = gltf.scene;
+    const box = new THREE.Box3().setFromObject(l2ConeTemplate);
+    const height = box.max.y - box.min.y;
+    if (height > 0) {
+      const scale = 80 / height;
+      l2ConeTemplate.scale.setScalar(scale);
+    }
+    // Apply orange color
+    l2ConeTemplate.traverse(c => {
+      if (c.isMesh) c.material = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide });
+    });
+    // Position bottom at y=0
+    l2ConeTemplate.updateMatrixWorld(true);
+    const scaledBox = new THREE.Box3().setFromObject(l2ConeTemplate);
+    l2ConeTemplate.position.y = -scaledBox.min.y;
+    console.log('cone template loaded, height:', height);
+  }, undefined, (err) => {
+    console.log('cone load error:', err);
+  });
+  // Road ground (procedural Canvas texture)
+  const roadCanvas = document.createElement('canvas');
+  roadCanvas.width = 512; roadCanvas.height = 512;
+  const rc = roadCanvas.getContext('2d');
+  rc.fillStyle = '#444444'; rc.fillRect(0, 0, 512, 512);
+  rc.fillStyle = '#ffffff';
+  rc.fillRect(240, 0, 32, 200);
+  rc.fillRect(240, 256, 32, 200);
+  const roadTex = new THREE.CanvasTexture(roadCanvas);
+  roadTex.wrapS = roadTex.wrapT = THREE.RepeatWrapping;
+  roadTex.repeat.set(2, 80);
+  const roadPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(1200, 26000),
+    new THREE.MeshBasicMaterial({ map: roadTex })
+  );
+  roadPlane.rotation.x = -Math.PI / 2;
+  roadPlane.position.set(0, 1, -13000);
+  scene.add(roadPlane);
+  console.log('canvas road plane added at y:1, from z:0 to z:-26000');
+  // Sky/background plane to prevent black gaps on split screen edges
+  const skyMat = new THREE.MeshBasicMaterial({ color: 0x1a0033, side: THREE.DoubleSide });
+  const skyPlane = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), skyMat);
+  skyPlane.position.set(0, 500, -25000);
+  scene.add(skyPlane);
+  // Walls (pastel pink) — wider corridor
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xffb3de });
+  for (let side = -1; side <= 1; side += 2) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(10, 200, 50000), wallMat);
+    wall.position.set(side * 600, 100, -24000);
+    scene.add(wall);
+    l2Walls.push(wall);
+  }
+  // Goal — lalala.png large fixed plane at finish (no scaling, no depth tricks)
+  const lalalaTex2 = new THREE.TextureLoader().load('lalala.png');
+  const lalalaPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(2400, 900),
+    new THREE.MeshBasicMaterial({
+      map: lalalaTex2,
+      side: THREE.DoubleSide,
+      depthTest: true,
+      depthWrite: true,
+      transparent: false
+    })
+  );
+  lalalaPlane.position.set(0, 450, -23400);
+  lalalaPlane.renderOrder = 0;
+  scene.add(lalalaPlane);
+  l2GoalPlane = lalalaPlane; // keep reference for LALALÁ floating text
+  console.log('lalala plane added at z:', lalalaPlane.position.z);
+  // Very bright finish light
+  const finishLight = new THREE.PointLight(0xff00aa, 5, 5000);
+  finishLight.position.set(0, 300, -23500);
+  scene.add(finishLight);
+  l2GoalCube = new THREE.Group(); // dummy placeholder so updateLalalaText doesn't break
+  // Finish line (bright yellow) — wide
+  const finishMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  l2FinishLine = new THREE.Mesh(new THREE.PlaneGeometry(1200, 20), finishMat);
+  l2FinishLine.position.set(0, 10, -23800);
+  scene.add(l2FinishLine);
+  // Ambient light for corridor (brighter)
+  const l2Light = new THREE.AmbientLight(0xffffff, 4);
+  l2Light.name = 'l2AmbientLight';
+  scene.add(l2Light);
+  // LALALÁ floating text
+  const div = document.createElement('div');
+  div.id = 'lalalaText';
+  div.textContent = 'LALALÁ';
+  div.style.cssText = `
+    position: fixed;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: 48px;
+    color: #ff00aa;
+    text-shadow: 0 0 30px #ff00aa, 0 0 60px #ff00aa88;
+    z-index: 200;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+  `;
+  document.body.appendChild(div);
+  // Store reference for text positioning
+  l2GoalCube.position.set(0, 200, -23800);
+  // Widen cameras for Level 2 corridor view
+  camera1.fov = 75;
+  camera1.updateProjectionMatrix();
+  camera2.fov = 75;
+  camera2.updateProjectionMatrix();
+  console.log('Level 2 scene built');
+}
+function updateLalalaText() {
+  const div = document.getElementById('lalalaText');
+  if (!div || !l2GoalPlane) return;
+  const pos = new THREE.Vector3();
+  l2GoalPlane.getWorldPosition(pos);
+  pos.y += 220;
+  pos.project(camera1);
+  const x = (pos.x * 0.5 + 0.5) * window.innerWidth;
+  const y = (-pos.y * 0.5 + 0.5) * window.innerHeight;
+  div.style.left = x + 'px';
+  div.style.top = y + 'px';
+}
+function createLevel2AI() {
+  const aiCharKey = players[0]?.characterKey === 'pipa' ? 'sofi' : 'pipa';
+  l2AI = {
+    group: new THREE.Group(),
+    x: 150,
+    z: -500,
+    y: 0, vy: 0,
+    jumping: false, onGround: true,
+    lives: 3,
+    targetX: 0,
+    score: 0,
+    aiSpeed: 4.8,
+    burstTimer: 0,
+    burstActive: false
+  };
+  // Placeholder box for AI
+  const geo = new THREE.BoxGeometry(30, 80, 30);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x00eeff });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.y = 40;
+  l2AI.group.add(mesh);
+  // Try to load actual character GLB
+  const charData = CHARACTERS[aiCharKey];
+  if (charData) {
+    const l = new GLTFLoader();
+    l.load(charData.base, (gltf) => {
+      const model = gltf.scene;
+      model.scale.setScalar(103);
+      const box = new THREE.Box3().setFromObject(model);
+      model.position.y = -box.min.y;
+      // Remove placeholder
+      l2AI.group.children.forEach(c => { if (c.isMesh && c !== mesh) l2AI.group.remove(c); });
+      l2AI.group.children.length = 0;
+      l2AI.group.add(model);
+    }, undefined, () => {});
+  }
+  l2AI.group.position.set(l2AI.x, 0, l2AI.z);
+  scene.add(l2AI.group);
+}
+function updateLevel2(delta, dt) {
+  // ── Find leading player z for obstacle spawning ──
+  const p1z = players[0]?.group?.position?.z ?? 0;
+  const p2z = players[1]?.group?.position?.z ?? (p1z - 100);
+  const leadingZ = Math.min(p1z, p2z);
+  // ── Acceleration/deceleration + left/right for all players ──
+  const in1 = getInput(1);
+  const in2 = getInput(2);
+  // Debug: log gamepad up/axis1 once per second
+  l2DebugTimer += delta;
+  if (l2DebugTimer >= 1.0) {
+    l2DebugTimer = 0;
+    console.log('in1.up:', in1.up, 'axis1:', navigator.getGamepads()[0]?.axes[1], 'p1Speed:', players[0]?.l2Speed);
+  }
+  for (let pi = 0; pi < players.length; pi++) {
+    const p = players[pi];
+    const inp = pi === 0 ? in1 : in2;
+    // Show/hide SIN VIDAS text for dead players
+    const sinVidasEl = document.getElementById('sinVidas' + (pi + 1));
+    if (p.lives <= 0) {
+      if (sinVidasEl) sinVidasEl.style.display = 'block';
+      continue;
+    }
+    if (sinVidasEl) sinVidasEl.style.display = 'none';
+    if (p.spellCooldown > 0) p.spellCooldown -= delta;
+    if (inp.spell && !p.isCastingSpell) {
+      castSpell(pi);
+    }
+    if (p.danceCooldown > 0) p.danceCooldown -= delta;
+    // ── Dance toggle ──
+    if (inp.dance && !p.isDancing && p.danceAction) {
+      startDance(pi);
+      // Dance life bonus
+      if (p.danceCooldown <= 0 && p.lives < 5) {
+        p.lives++;
+        p.danceCooldown = 10;
+        if (pi === 0) game.lives = p.lives;
+        if (pi === 1) game.lives2 = p.lives;
+        updateUI();
+        showFloatingText(pi + 1, '+1 VIDA');
+        console.log('dance life bonus, player:', pi, 'lives:', p.lives);
+      }
+    } else if (!inp.dance && p.isDancing) {
+      stopDance(pi);
+    }
+    // Forward: accelerate when holding up, decelerate otherwise (no auto-forward)
+    if (inp.up) {
+      p.l2Speed = Math.min(p.l2Speed + 0.5, 8);
+    } else {
+      p.l2Speed = Math.max(p.l2Speed - 0.5, 0);
+    }
+    p.group.position.z -= p.l2Speed;
+    if (p.animState !== 'jump' && p.animState !== 'spell' && p.animState !== 'dance') {
+      if (p.l2Speed > 1) {
+        if (p.animState !== 'run') {
+          if (p.walkAction && p.walkAction.isRunning()) p.walkAction.fadeOut(0.2);
+          if (p.runAction) p.runAction.reset().fadeIn(0.2).play();
+          p.animState = 'run';
+        }
+      } else {
+        if (p.animState !== 'walk') {
+          if (p.runAction && p.runAction.isRunning()) p.runAction.fadeOut(0.2);
+          if (p.walkAction) p.walkAction.reset().fadeIn(0.2).play();
+          p.animState = 'walk';
+        }
+      }
+    }
+    if (frameCount % 60 === 0) console.log('L2 animState:', p.animState, 'l2Speed:', p.l2Speed, 'walkRunning:', p.walkAction?.isRunning(), 'runRunning:', p.runAction?.isRunning());
+    // Left/right
+    if (inp.left) {
+      p.group.position.x -= 10 * dt;
+    }
+    if (inp.right) {
+      p.group.position.x += 10 * dt;
+    }
+    // Clamp X within corridor (±550) and push back if beyond walls
+    p.group.position.x = Math.max(-550, Math.min(550, p.group.position.x));
+    // Wall push-back — prevent going off-screen by pushing inward
+    if (p.group.position.x >= 550) { p.group.position.x = 548; }
+    if (p.group.position.x <= -550) { p.group.position.x = -548; }
+    // Jump (edge-triggered)
+    if (inp.jump && !p.jumpButtonPressed && p.onGround && !p.jumping) {
+      p.vy = JUMP_VY;
+      p.jumping = true;
+    }
+    p.jumpButtonPressed = inp.jump;
+    // Jump physics
+    if (p.jumping) {
+      p.vy -= GRAVITY * dt;
+      p.y += p.vy * dt;
+      if (p.y <= 0) {
+        p.y = 0; p.vy = 0; p.jumping = false; p.onGround = true;
+        p.jumpOverTextShown = false;
+      }
+    }
+    p.group.position.y = p.y;
+    p.onGround = p.y <= 0.1;
+    // Face forward always
+    p.group.rotation.y = Math.PI;
+    // Invincibility countdown (2 seconds = ~120 frames)
+    if (p.invincible) {
+      p.invincibleTimer--;
+      p.group.visible = Math.floor(p.invincibleTimer / 10) % 2 === 0;
+      if (p.invincibleTimer <= 0) {
+        p.invincible = false;
+        p.group.visible = true;
+      }
+    }
+    if (p.mixer) p.mixer.update(delta);
+    // Win check: reached finish line → show win screen
+    if (p.group.position.z <= -23800) {
+      game.level2Winner = pi;
+      showLevel2WinScreen(pi);
+      return;
+    }
+  }
+  // ── AI update ──
+  if (l2AI && l2AI.lives > 0) {
+    updateLevel2AI(dt);
+    if (l2AI.z < leadingZ) leadingZ = l2AI.z;
+  }
+  // ── Spawn cones (max 20 on track) ──
+  if (l2ConeBlockTimer <= 0 && l2Cones.length < 20 && game.elapsed - l2LastConeSpawn > 1.5) {
+    spawnLevel2Cone(leadingZ);
+    l2LastConeSpawn = game.elapsed;
+  }
+  // ── Decrease cone block timer ──
+  if (l2ConeBlockTimer > 0) l2ConeBlockTimer -= delta;
+  // ── Spawn coins (max 10 on track) ──
+  if (l2Coins.length < 10 && game.elapsed - l2LastCoinSpawn > 2.0) {
+    spawnLevel2Coin(leadingZ);
+    l2LastCoinSpawn = game.elapsed;
+  }
+  // ── Update obstacles ──
+  updateLevel2Obstacles(dt);
+  // ── Update spell cooldown indicator ──
+  for (let pi = 0; pi < players.length; pi++) {
+    const p = players[pi];
+    const cdEl = document.getElementById('spellCD' + (pi + 1));
+    if (cdEl) {
+      if (p.spellCooldown <= 0) {
+        cdEl.textContent = pi === 0 ? 'Q: HECHIZO' : 'U: HECHIZO';
+        cdEl.style.opacity = '1';
+      } else {
+        const secs = Math.ceil(p.spellCooldown);
+        cdEl.textContent = (pi === 0 ? 'Q' : 'U') + ': 🔄 ' + secs + 's';
+        cdEl.style.opacity = '0.6';
+      }
+    }
+  }
+  // ── Update progress bar ──
+  const level2FinishZ = -23800;
+  const totalDist = Math.abs(level2FinishZ - level2StartZ);
+  const p1ActualZ = players[0]?.group?.position?.z ?? 0;
+  const p1Progress = Math.min(1, Math.max(0, (level2StartZ - p1ActualZ) / totalDist));
+  const p2Progress = players[1] ? Math.min(1, Math.max(0, (level2StartZ - players[1].group.position.z) / totalDist)) : 0;
+  const bar1 = document.getElementById('progressBar1');
+  const bar2 = document.getElementById('progressBar2');
+  if (bar1) bar1.style.width = (p1Progress * 180) + 'px';
+  if (bar2) bar2.style.width = (p2Progress * 180) + 'px';
+  console.log('p1 z:', p1ActualZ, 'p1Progress:', p1Progress.toFixed(2));
+  // ── Cameras ──
+  const lookY = 100;
+  if (players.length >= 1 && players[0].lives > 0) {
+    const p1 = players[0].group.position;
+    _v3.set(p1.x, p1.y + 200, p1.z + 400);
+    camera1.position.lerp(_v3, 0.08);
+    camera1.lookAt(p1.x, p1.y + lookY, p1.z);
+  }
+  if (players.length >= 2 && players[1].lives > 0) {
+    const p2 = players[1].group.position;
+    _v3.set(p2.x, p2.y + 200, p2.z + 400);
+    camera2.position.lerp(_v3, 0.08);
+    camera2.lookAt(p2.x, p2.y + lookY, p2.z);
+  }
+  updateLalalaText();
+  updateUI();
+}
+function updateLevel2AI(dt) {
+  // Burst timer: every 3 seconds, random speed 3-6 for 1 second
+  l2AI.burstTimer += dt;
+  if (l2AI.burstTimer >= 3 && !l2AI.burstActive) {
+    l2AI.burstActive = true;
+    l2AI.burstTimer = 0;
+    l2AI.aiSpeed = 3 + Math.random() * 3; // 3 to 6
+    // After 1 second, revert to base speed
+    setTimeout(() => {
+      if (l2AI) {
+        l2AI.burstActive = false;
+        l2AI.aiSpeed = 4.8;
+        l2AI.burstTimer = 0;
+      }
+    }, 1000);
+  }
+  // Forward at current speed
+  l2AI.z -= l2AI.aiSpeed;
+  // Find nearest cone ahead to dodge
+  let nearestDist = Infinity;
+  let nearestX = 0;
+  for (const cone of l2Cones) {
+    const dx = cone.position.x - l2AI.x;
+    const dz = cone.position.z - l2AI.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < nearestDist && dz < 0 && dz > -600) {
+      nearestDist = dist;
+      nearestX = cone.position.x;
+    }
+  }
+  // Dodge away from nearest obstacle
+  if (nearestDist < 250) {
+    const dodgeDir = l2AI.x > nearestX ? 1 : -1;
+    l2AI.targetX = l2AI.x + dodgeDir * 100;
+  } else {
+    // Random drift
+    l2AI.targetX += (Math.random() - 0.5) * 20;
+  }
+  l2AI.targetX = Math.max(-170, Math.min(170, l2AI.targetX));
+  l2AI.x += (l2AI.targetX - l2AI.x) * 0.03 * dt;
+  l2AI.x = Math.max(-180, Math.min(180, l2AI.x));
+  l2AI.group.position.set(l2AI.x, 0, l2AI.z);
+  // Win check
+  if (l2AI.z <= -23800) {
+    game.level2Winner = 99; // AI wins
+    game.gameOver = true;
+    showLevel2WinScreen(99);
+  }
+}
+function spawnLevel2Cone(leadingZ) {
+  if (!l2ConeTemplate) return;
+  const x = (Math.random() - 0.5) * 900; // -450 to 450
+  const z = leadingZ - 600;
+  const cone = l2ConeTemplate.clone(true);
+  scene.add(cone);
+  cone.position.set(x, cone.position.y, z);
+  // cone.position.y is preserved from template (already lifted to ground level)
+  console.log('ground is flat plane at y:0, cone at y:', cone.position.y);
+  l2Cones.push(cone);
+}
+function spawnLevel2Coin(leadingZ) {
+  console.log('spawnLevel2Coin called, l2CoinTemplate:', l2CoinTemplate, 'noteTemplate:', noteTemplate);
+  if (!l2CoinTemplate && noteTemplate) l2CoinTemplate = noteTemplate;
+  if (!l2CoinTemplate) { console.log('NO COIN TEMPLATE'); return; }
+  const x = (Math.random() - 0.5) * 800; // -400 to 400
+  const z = leadingZ - 400;
+  const coin = l2CoinTemplate.clone();
+  coin.position.set(x, 80, z);
+  console.log('spawning note at:', x, 80, z);
+  coin.userData.baseY = 80;
+  coin.userData.bobOffset = Math.random() * Math.PI * 2;
+  scene.add(coin);
+  l2Coins.push(coin);
+}
+function updateLevel2Obstacles(dt) {
+  // Determine furthest-behind z for cleanup
+  let maxPlayerZ = -Infinity;
+  for (const pl of players) {
+    if (pl.lives > 0 && pl.group.position.z > maxPlayerZ) maxPlayerZ = pl.group.position.z;
+  }
+  if (l2AI && l2AI.lives > 0 && l2AI.z > maxPlayerZ) maxPlayerZ = l2AI.z;
+  // ── Cones ──
+  for (let i = l2Cones.length - 1; i >= 0; i--) {
+    const cone = l2Cones[i];
+    // Remove cones far behind
+    if (cone.position.z > maxPlayerZ + 800) {
+      scene.remove(cone);
+      l2Cones.splice(i, 1);
+      continue;
+    }
+    // Collision with players
+    for (let pi = 0; pi < players.length; pi++) {
+      const p = players[pi];
+      if (p.lives <= 0 || p.invincible) continue;
+      const dist = p.group.position.distanceTo(cone.position);
+      if (dist < 80 && p.y < 30) {
+        p.lives--;
+        if (pi === 0) game.lives = p.lives;
+        if (pi === 1) game.lives2 = p.lives;
+        updateUI();
+        p.invincible = true;
+        p.invincibleTimer = 120; // ~2 seconds at 60fps
+        if (p.lives <= 0) {
+          if (pi === 0) game.lives = 0;
+          if (pi === 1) game.lives2 = 0;
+        }
+      }
+    }
+    // Collision with AI
+    if (l2AI && l2AI.lives > 0) {
+      const dist = Math.sqrt(
+        Math.pow(l2AI.x - cone.position.x, 2) +
+        Math.pow(l2AI.z - cone.position.z, 2)
+      );
+      if (dist < 80 && !l2AI.invincible) {
+        l2AI.lives--;
+        l2AI.z += 300;
+        l2AI.invincible = true;
+        setTimeout(() => { if (l2AI) l2AI.invincible = false; }, 2000);
+      }
+    }
+  }
+  // ── Coins ──
+  for (let i = l2Coins.length - 1; i >= 0; i--) {
+    const coin = l2Coins[i];
+    // Rotation and bobbing
+    coin.rotation.y += 0.03;
+    coin.position.y = coin.userData.baseY + Math.sin(game.elapsed * 2 + coin.userData.bobOffset) * 15;
+    // Remove coins far behind
+    if (coin.position.z > maxPlayerZ + 800) {
+      scene.remove(coin);
+      l2Coins.splice(i, 1);
+      continue;
+    }
+    // Collection by players (2D distance, ignore Y so jumping doesn't prevent collection)
+    for (let pi = 0; pi < players.length; pi++) {
+      const p = players[pi];
+      if (p.lives <= 0) continue;
+      const dx = p.group.position.x - coin.position.x;
+      const dz = p.group.position.z - coin.position.z;
+      const dist2D = Math.sqrt(dx * dx + dz * dz);
+      if (dist2D < 200) {
+        p.score++;
+        updateUI();
+        showFloatingText(pi + 1, '+1');
+        spawnCoinParticles(coin.position.clone());
+        scene.remove(coin);
+        l2Coins.splice(i, 1);
+        break;
+      }
+    }
+    // Collection by AI (2D distance, remove coin, no score)
+    if (l2AI && l2AI.lives > 0 && i < l2Coins.length) {
+      const dx = l2AI.x - coin.position.x;
+      const dz = l2AI.z - coin.position.z;
+      const dist2D = Math.sqrt(dx * dx + dz * dz);
+      if (dist2D < 200) {
+        scene.remove(coin);
+        l2Coins.splice(i, 1);
+      }
+    }
+  }
+}
+function showLevel2WinScreen(winnerIdx) {
+  game.level2Active = false;
+  game.gameOver = true;
+  // Remove LALALÁ floating text
+  const lala = document.getElementById('lalalaText');
+  if (lala) lala.remove();
+  // Stop player movement
+  for (const p of players) {
+    p.l2Speed = 0;
+  }
+  // Determine scores
+  const numSides = Math.max(players.length, 1);
+  for (let pi = 0; pi < numSides; pi++) {
+    const overlayEl = document.getElementById('l2GameOverOverlay' + (pi + 1));
+    const resultEl = document.getElementById('l2GameoverResult' + (pi + 1));
+    if (!overlayEl || !resultEl) continue;
+    overlayEl.style.display = 'flex';
+    const score = players[pi] ? players[pi].score : 0;
+    if (playerCount === 1 && winnerIdx === 99) {
+      // AI won
+      if (pi === 0) {
+        resultEl.textContent = 'LLEGASTE TARDE';
+        // Add score
+        const scoreEl = document.createElement('div');
+        scoreEl.className = 'gameover-score';
+        scoreEl.textContent = 'Score: ' + score;
+        overlayEl.appendChild(scoreEl);
+      }
+      // Show AI win on right side
+      if (pi === 1 || (pi === 0 && numSides === 1)) {
+        const aiOverlay = document.getElementById('l2GameOverOverlay2');
+        if (aiOverlay) {
+          aiOverlay.style.display = 'flex';
+          const aiResult = document.getElementById('l2GameoverResult2');
+          if (aiResult) {
+            aiResult.textContent = '¡LLEGASTE A LALALÁ!';
+            // AI score
+            const existingScore = aiOverlay.querySelector('.gameover-score');
+            if (!existingScore) {
+              const se = document.createElement('div');
+              se.className = 'gameover-score';
+              se.textContent = 'Score: ' + (l2AI ? l2AI.score : 0);
+              aiOverlay.appendChild(se);
+            }
+          }
+        }
+      }
+    } else if (playerCount === 1 && winnerIdx !== 99 && winnerIdx !== undefined) {
+      // Human won
+      if (pi === 0) {
+        resultEl.textContent = '¡LLEGASTE A LALALÁ!';
+      }
+      // Show "LLEGASTE TARDE" on AI side (right)
+      const aiOverlay = document.getElementById('l2GameOverOverlay2');
+      if (aiOverlay) {
+        aiOverlay.style.display = 'flex';
+        const aiResult = document.getElementById('l2GameoverResult2');
+        if (aiResult) aiResult.textContent = 'LLEGASTE TARDE';
+        // AI score
+        const existingScore = aiOverlay.querySelector('.gameover-score');
+        if (!existingScore) {
+          const se = document.createElement('div');
+          se.className = 'gameover-score';
+          se.textContent = 'Score: ' + (l2AI ? l2AI.score : 0);
+          aiOverlay.appendChild(se);
+        }
+      }
+      // Player score
+      const existingScore = overlayEl.querySelector('.gameover-score');
+      if (!existingScore) {
+        const se = document.createElement('div');
+        se.className = 'gameover-score';
+        se.textContent = 'Score: ' + score;
+        overlayEl.appendChild(se);
+      }
+    } else {
+      // 2 players
+      if (pi === winnerIdx) {
+        resultEl.textContent = '¡LLEGASTE A LALALÁ!';
+      } else {
+        resultEl.textContent = 'LLEGASTE TARDE';
+      }
+      // Score
+      const existingScore = overlayEl.querySelector('.gameover-score');
+      if (!existingScore) {
+        const se = document.createElement('div');
+        se.className = 'gameover-score';
+        se.textContent = 'Score: ' + score;
+        overlayEl.appendChild(se);
+      }
+    }
+  }
+  // Show restart button
+  const restartBtn = document.getElementById('restartBtn');
+  if (restartBtn) restartBtn.style.display = 'block';
+}
+// ─── Start ─────────────────────────────────────────────────────
+update();
+updateUI();
+// ─── Level 3 ─────────────────────────────────────────────────────
+function triggerLevel3(winnerPI) {
+  l3WinnerPI = winnerPI;
+  game.level2Active = false;
+  for (let pi = 0; pi < players.length; pi++) { if (pi !== winnerPI) { const el = document.getElementById('l3LlegasteTarde' + (pi + 1)); if (el) el.style.display = 'block'; } }
+  if (playerCount === 1) {
+    const ai = document.getElementById('l2GameOverOverlay2'); const ar = document.getElementById('l2GameoverResult2');
+    if (ai && ar) { ar.textContent = 'LLEGASTE TARDE'; ai.style.display = 'flex'; }
+  }
+  // Single screen: hide split UI, full viewport
+  document.getElementById('p1UI').style.display = 'none';
+  document.getElementById('p2UI').style.display = 'none';
+  document.getElementById('splitDivider').style.display = 'none';
+  renderer.setScissorTest(false);
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+  camera1.aspect = window.innerWidth / window.innerHeight;
+  camera1.updateProjectionMatrix();
+  // Place losing player on the side
+  for (let pi = 0; pi < players.length; pi++) {
+    if (pi !== winnerPI) {
+      const lp = players[pi];
+      lp.group.position.set(-500, 0, 0);
+lp.group.scale.setScalar(0.7);
+      lp.group.rotation.y = Math.PI / 2;
+      lp.y = 0; lp.vy = 0; lp.jumping = false; lp.onGround = true;
+      lp.l2Speed = 0;
+      if (lp.walkAction) { lp.walkAction.reset().play(); lp.animState = 'walk'; }
+    }
+  }
+  l3IntroShowing = true;
+  hideLevel1Scene();
+  currentLevel = 3;
+  document.getElementById("l3LlegasteTarde1").style.display = "none";
+  document.getElementById("l3LlegasteTarde2").style.display = "none";
+  
+  for (const w of l2Walls) { if (w) w.visible = false; }
+  if (l2GoalPlane) l2GoalPlane.visible = false;
+  if (l2FinishLine) l2FinishLine.visible = false;
+  for (const c of l2Cones) scene.remove(c); for (const c of l2Coins) scene.remove(c);
+  l2Cones.length = 0; l2Coins.length = 0;
+  const lt = document.getElementById('lalalaText'); if (lt) lt.style.display = 'none';
+  showLevel3Intro(() => { buildLevel3Scene(); l3Active = true; l3IntroShowing = false; });
+}
+function buildLevel3Scene() {
+  l3OldSceneBg = scene.background ? scene.background.clone() : null;
+  l3OldFog = scene.fog;
+  scene.background = new THREE.Color(0x0a0005);
+  scene.fog = new THREE.FogExp2(0x1a0020, 0.0008);
+  const gm = new THREE.MeshStandardMaterial({ color: 0x1a0010 });
+  l3GroundL3 = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), gm);
+  l3GroundL3.rotation.x = -Math.PI / 2; l3GroundL3.position.set(0, 0, 0);
+  scene.add(l3GroundL3); l3SceneElements.push(l3GroundL3);
+  const lps = [[-300,150,-200],[300,150,-200],[-200,100,200],[200,100,200],[0,200,-300]];
+  for (const p of lps) { const l = new THREE.PointLight(0xff00aa, 2, 600); l.position.set(p[0],p[1],p[2]); scene.add(l); l3Lights.push(l); l3SceneElements.push(l); }
+  const pl = players[l3WinnerPI];
+  if (pl) {
+    pl.group.position.set(-200,0,0); pl.l2Speed=0; pl.y=0; pl.vy=0; pl.jumping=false; pl.onGround=true; pl.isDancing=false;
+    if (pl.danceDiv) { pl.danceDiv.remove(); pl.danceDiv = null; }
+    pl.group.rotation.y = Math.PI / 2;
+    if (pl.walkAction) { if (pl.runAction) pl.runAction.stop(); if (pl.jumpAction) pl.jumpAction.stop(); pl.walkAction.reset().play(); pl.animState = 'walk'; }
+  }
+  l3PlayerHP=100; l3BossHP=100; l3BossAttackTimer=3; l3BossAnimating=false; l3PlayerAnimating=false; l3GameOverShown=false; l3BossAttackCooldown=3;
+  document.getElementById('l3HpContainer').style.display='block'; updateL3HpBars();
+  loadLevel3Boss(); loadLevel3PlayerAnims();
+  camera1.aspect = window.innerWidth / window.innerHeight;
+  camera1.position.set(0,150,700); camera1.lookAt(0,120,0); camera1.fov=50; camera1.updateProjectionMatrix();
+}
+function loadLevel3Boss() {
+  new GLTFLoader().load('nivel3/Meshy_AI_Magenta_Menace_biped/Meshy_AI_Magenta_Menace_biped/Meshy_AI_Magenta_Menace_biped_Character_output.glb', g=>{
+    const m=g.scene; const pl=players[l3WinnerPI];
+    if (pl&&pl.group.children.length>0) { const pb=new THREE.Box3().setFromObject(pl.group.children[0]); const ph=pb.max.y-pb.min.y; const bb=new THREE.Box3().setFromObject(m); const bh=bb.max.y-bb.min.y; if (bh>0&&ph>0) m.scale.setScalar(ph/bh); }
+    m.updateMatrixWorld(true); const fb=new THREE.Box3().setFromObject(m); m.position.y=-fb.min.y;
+    m.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;}});
+    l3Boss=new THREE.Group(); l3Boss.add(m); l3Boss.position.set(200,0,0); l3Boss.rotation.y=-Math.PI / 2;
+    scene.add(l3Boss); l3SceneElements.push(l3Boss);
+    l3BossMixer=new THREE.AnimationMixer(m);
+    new GLTFLoader().load('nivel3/Meshy_AI_Magenta_Menace_biped/Meshy_AI_Animation_Hit_Reaction_1_withSkin.glb',g=>{if(g.animations[0]&&l3BossMixer){const c=g.animations[0];c.tracks=c.tracks.filter(t=>!t.name.includes('.position'));l3BossHitAction=l3BossMixer.clipAction(c);l3BossHitAction.loop=THREE.LoopOnce;l3BossHitAction.clampWhenFinished=true;}});
+    new GLTFLoader().load('nivel3/Meshy_AI_Magenta_Menace_biped/Meshy_AI_Magenta_Menace_biped/Meshy_AI_Magenta_Menace_biped_Animation_Charged_Ground_Slam_withSkin.glb',g=>{if(g.animations[0]&&l3BossMixer){const c=g.animations[0];c.tracks=c.tracks.filter(t=>!t.name.includes('.position'));l3BossSpellAction=l3BossMixer.clipAction(c);l3BossSpellAction.loop=THREE.LoopOnce;l3BossSpellAction.clampWhenFinished=true;}});
+    new GLTFLoader().load('nivel3/Meshy_AI_Magenta_Menace_biped/Meshy_AI_Animation_Stand_Dodge_withSkin.glb',g=>{if(g.animations[0]&&l3BossMixer){const c=g.animations[0];c.tracks=c.tracks.filter(t=>!t.name.includes('.position'));l3BossDodgeAction=l3BossMixer.clipAction(c);l3BossDodgeAction.loop=THREE.LoopOnce;l3BossDodgeAction.clampWhenFinished=true;}});
+  },undefined,err=>{
+    const fb=new THREE.Mesh(new THREE.BoxGeometry(40,120,40),new THREE.MeshStandardMaterial({color:0xff0044})); fb.position.y=60;
+    l3Boss=new THREE.Group(); l3Boss.add(fb); l3Boss.position.set(0,0,-500); l3Boss.rotation.y=Math.PI;
+    scene.add(l3Boss); l3SceneElements.push(l3Boss);
+  });
+}
+function loadLevel3PlayerAnims() {
+  const p=players[l3WinnerPI]; if(!p||!p.mixer)return;
+  new GLTFLoader().load('character/Meshy_AI_Animation_Hit_Reaction_withSkin.glb',g=>{if(g.animations[0]&&p.mixer){const c=g.animations[0];c.tracks=c.tracks.filter(t=>!t.name.includes('.position'));l3PlayerHitAction=p.mixer.clipAction(c);l3PlayerHitAction.loop=THREE.LoopOnce;l3PlayerHitAction.clampWhenFinished=true;}});
+  new GLTFLoader().load('character/Meshy_AI_Animation_Roll_Dodge_3_withSkin.glb',g=>{if(g.animations[0]&&p.mixer){const c=g.animations[0];c.tracks=c.tracks.filter(t=>!t.name.includes('.position'));l3PlayerDodgeAction=p.mixer.clipAction(c);l3PlayerDodgeAction.loop=THREE.LoopOnce;l3PlayerDodgeAction.clampWhenFinished=true;}});
+}
+function updateL3HpBars() {
+  const pb=document.getElementById('l3PlayerHpBar'); const bb=document.getElementById('l3BossHpBar');
+  if(pb)pb.style.width=Math.max(0,l3PlayerHP)+'%'; if(bb)bb.style.width=Math.max(0,l3BossHP)+'%';
+}
+function updateLevel3(delta,dt) {
+  const p=players[l3WinnerPI]; if(!p)return;
+  if(l3GameOverShown){
+    if(l3BossMixer)l3BossMixer.update(delta); if(p.mixer)p.mixer.update(delta);
+    for(let i=particles.length-1;i>=0;i--){const pt=particles[i];pt.position.x+=pt.userData.vx;pt.position.y+=pt.userData.vy;pt.position.z+=pt.userData.vz;pt.userData.vy-=0.001;pt.userData.life-=dt;if(pt.userData.life<=0){scene.remove(pt);pt.geometry.dispose();pt.material.dispose();particles.splice(i,1);}}
+    updateL3Confetti(delta); camera1.position.set(0,150,700); camera1.lookAt(0,120,0); return;
+  }
+  const inp=getInput(l3WinnerPI+1);
+  if(inp.left)p.group.position.x-=10*dt; if(inp.right)p.group.position.x+=10*dt;
+  p.group.position.x=Math.max(-450,Math.min(50,p.group.position.x));
+  const moving=inp.left||inp.right;
+  if(moving&&l3PlayerDodgeAction&&!l3PlayerAnimating&&p.animState!=='spell'){
+    if(p.walkAction)p.walkAction.fadeOut(0.1); if(p.runAction)p.runAction.stop();
+    l3PlayerDodgeAction.reset();l3PlayerDodgeAction.loop=THREE.LoopOnce;l3PlayerDodgeAction.clampWhenFinished=true;
+    l3PlayerDodgeAction.fadeIn(0.1).play(); p.animState='dodge'; l3PlayerAnimating=true;
+    setTimeout(()=>{l3PlayerAnimating=false;if(p&&p.animState==='dodge'&&p.walkAction){p.walkAction.reset().fadeIn(0.2).play();p.animState='walk';}},500);
+  }
+  p.group.rotation.y=0;
+  if(inp.jump&&p.onGround&&!p.jumping){p.vy=JUMP_VY;p.jumping=true;if(p.jumpAction){if(p.walkAction)p.walkAction.fadeOut(0.1);p.jumpAction.reset();p.jumpAction.loop=THREE.LoopOnce;p.jumpAction.clampWhenFinished=true;p.jumpAction.fadeIn(0.1).play();p.animState='jump';}}
+  if(p.jumping){p.vy-=GRAVITY*dt;p.y+=p.vy*dt;if(p.y<=0){p.y=0;p.vy=0;p.jumping=false;p.onGround=true;if(p.animState==='jump'&&p.walkAction){p.walkAction.reset().fadeIn(0.2).play();p.animState='walk';}}}
+  p.group.position.y=p.y; p.onGround=p.y<=0.1;
+  if(p.spellCooldown>0)p.spellCooldown-=delta;
+  if(inp.spell&&!p.isCastingSpell&&p.spellCooldown<=0&&p.spellAction&&l3Boss&&l3BossHP>0){
+    p.isCastingSpell=true; p.spellCooldown=3;
+    if(p.walkAction)p.walkAction.fadeOut(0.2); if(l3PlayerDodgeAction)l3PlayerDodgeAction.stop();
+    p.spellAction.reset();p.spellAction.loop=THREE.LoopOnce;p.spellAction.clampWhenFinished=true;
+    p.spellAction.fadeIn(0.2).play(); p.animState='spell';
+    showSpellText(l3WinnerPI+1); spawnSpellParticles(p.group.position.clone());
+    const dist=p.group.position.distanceTo(l3Boss.position);
+    if(dist<200){
+      if(Math.random()<l3BossDodgeChance&&l3BossDodgeAction){
+        if(l3BossHitAction)l3BossHitAction.stop();
+        l3BossDodgeAction.reset();l3BossDodgeAction.loop=THREE.LoopOnce;l3BossDodgeAction.clampWhenFinished=true;
+        l3BossDodgeAction.fadeIn(0.1).play(); l3BossAnimating=true; setTimeout(()=>{l3BossAnimating=false;},400);
+        showFloatingText(l3WinnerPI+1,'ESQUIVÓ!');
+      }else{
+        l3BossHP-=20; updateL3HpBars();
+        if(l3BossHitAction){if(l3BossDodgeAction)l3BossDodgeAction.stop();l3BossHitAction.reset();l3BossHitAction.loop=THREE.LoopOnce;l3BossHitAction.clampWhenFinished=true;l3BossHitAction.fadeIn(0.1).play();l3BossAnimating=true;setTimeout(()=>{l3BossAnimating=false;},400);}
+        l3Boss.position.z=Math.max(-800,l3Boss.position.z-20);
+        spawnSpellParticles(l3Boss.position.clone());
+        if(l3BossHP<=0){triggerLevel3Win();return;}
+      }
+    }else{showFloatingText(l3WinnerPI+1,'FALLASTE!');}
+    const dur=p.spellAction._clip?p.spellAction._clip.duration:0.5;
+    setTimeout(()=>{p.isCastingSpell=false;if(p&&p.animState==='spell'&&p.walkAction){p.walkAction.reset().fadeIn(0.2).play();p.animState='walk';}},(dur||0.5)*1000);
+  }
+  l3BossAttackTimer+=delta;
+  if(l3BossAttackTimer>=l3BossAttackCooldown&&l3BossHP>0){
+    l3BossAttackTimer=0;
+    if(l3BossSpellAction&&!l3BossAnimating){
+      if(l3BossHitAction)l3BossHitAction.stop(); if(l3BossDodgeAction)l3BossDodgeAction.stop();
+      l3BossSpellAction.reset();l3BossSpellAction.loop=THREE.LoopOnce;l3BossSpellAction.clampWhenFinished=true;
+      l3BossSpellAction.fadeIn(0.1).play(); l3BossAnimating=true;
+      setTimeout(()=>{
+        l3BossAnimating=false;
+        if(!p||p.lives<=0||l3BossHP<=0)return;
+        const dist=p.group.position.distanceTo(l3Boss.position);
+        if(dist<300){
+          const nowInp=getInput(l3WinnerPI+1); const isDodging=nowInp.left||nowInp.right;
+          if(!isDodging){
+            l3PlayerHP-=15; updateL3HpBars();
+            if(l3PlayerHitAction){if(p.walkAction)p.walkAction.fadeOut(0.1);l3PlayerHitAction.reset();l3PlayerHitAction.loop=THREE.LoopOnce;l3PlayerHitAction.clampWhenFinished=true;l3PlayerHitAction.fadeIn(0.1).play();p.animState='hit';setTimeout(()=>{if(p&&p.animState==='hit'&&p.walkAction){p.walkAction.reset().fadeIn(0.2).play();p.animState='walk';}},500);}
+            p.group.position.z+=30; spawnSpellParticles(p.group.position.clone()); showFloatingText(l3WinnerPI+1,'DAÑO!');
+            if(l3PlayerHP<=0){triggerLevel3GameOver();return;}
+          }else{showFloatingText(l3WinnerPI+1,'ESQUIVASTE!');}
+        }
+      },400);
+    }
+  }
+  for(const l of l3Lights)l.intensity=1.5+Math.sin(game.elapsed*3+l.position.x)*0.8;
+  if(l3Boss){l3Boss.rotation.y=-Math.PI/2; l3Boss.position.y=Math.sin(game.elapsed*1.5)*5;}
+  for(let i=particles.length-1;i>=0;i--){const pt=particles[i];pt.position.x+=pt.userData.vx*dt;pt.position.y+=pt.userData.vy*dt;pt.position.z+=pt.userData.vz*dt;pt.userData.vy-=0.001*dt;pt.userData.life-=dt;if(pt.userData.life<=0){scene.remove(pt);pt.geometry.dispose();pt.material.dispose();particles.splice(i,1);}}
+  if(l3BossMixer)l3BossMixer.update(delta); if(p.mixer)p.mixer.update(delta);
+  camera1.position.set(0,150,700); camera1.lookAt(0,120,0);
+  if(playerCount>=2){const lp=l3WinnerPI===0?1:0;const l=players[lp];if(l&&l.lives>0){camera2.position.set(0,200,l.group.position.z+400);camera2.lookAt(0,100,l.group.position.z);}}
+  updateL3HpBars();
+}
+function triggerLevel3Win(){if(l3GameOverShown)return;l3GameOverShown=true;if(l3BossHitAction){l3BossHitAction.reset();l3BossHitAction.loop=THREE.LoopRepeat;l3BossHitAction.play();}document.getElementById('l3WinScreen').classList.add('show');document.getElementById('l3HpContainer').style.display='none';spawnL3Confetti();const r=document.getElementById('restartBtn');if(r)r.style.display='block';}
+function triggerLevel3GameOver(){if(l3GameOverShown)return;l3GameOverShown=true;document.getElementById('l3GameOverScreen').classList.add('show');document.getElementById('l3HpContainer').style.display='none';const r=document.getElementById('restartBtn');if(r)r.style.display='block';}
+function spawnL3Confetti(){for(let i=0;i<80;i++){const s=3+Math.random()*6;const g=new THREE.PlaneGeometry(s,s*1.5);const cs=[0xff00aa,0x00ff88,0xff0044,0xffff00,0x00eeff];const m=new THREE.MeshBasicMaterial({color:cs[Math.floor(Math.random()*cs.length)],side:THREE.DoubleSide});const mesh=new THREE.Mesh(g,m);mesh.position.set((Math.random()-0.5)*800,200+Math.random()*300,(Math.random()-0.5)*800-250);mesh.rotation.set(Math.random()*Math.PI*2,Math.random()*Math.PI*2,Math.random()*Math.PI*2);mesh.userData.vy=-(0.5+Math.random()*1);mesh.userData.rotSpeed=(Math.random()-0.5)*0.1;mesh.userData.drift=(Math.random()-0.5)*0.5;scene.add(mesh);l3Confetti.push(mesh);}}
+function updateL3Confetti(delta){for(let i=l3Confetti.length-1;i>=0;i--){const c=l3Confetti[i];c.position.y+=c.userData.vy;c.position.x+=c.userData.drift;c.rotation.x+=c.userData.rotSpeed;c.rotation.z+=c.userData.rotSpeed;if(c.position.y<-50){scene.remove(c);c.geometry.dispose();c.material.dispose();l3Confetti.splice(i,1);}}}
+function showLevel3Intro(onDone) {
+  const msg1 = document.createElement('div');
+  msg1.textContent = '\u00a1LLEGASTE A LALALA!';
+  msg1.style.cssText = `
+    position: fixed; top: 50%; left: 50%;
+    font-family: 'Comic Sans MS', cursive;
+    font-size: clamp(40px, 7vw, 90px);
+    color: #ff00aa;
+    text-shadow: 0 0 30px #ff00aa;
+    z-index: 9999;
+    pointer-events: none;
+    text-align: center;
+  `;
+  document.body.appendChild(msg1);
+  setTimeout(() => {
+    msg1.remove();
+    const msg2 = document.createElement('div');
+    msg2.textContent = 'LA PALA TE VINO A BUSCAR A LALALA!!!';
+    msg2.style.cssText = msg1.style.cssText;
+    msg2.style.fontSize = 'clamp(28px, 5vw, 65px)';
+    document.body.appendChild(msg2);
+    setTimeout(() => {
+      msg2.remove();
+      onDone();
+    }, 2500);
+  }, 2000);
+}
+document.getElementById('l3DaleVueltaBtn').addEventListener('click', () => { location.reload(); });
+</script>
+</body>
+</html>

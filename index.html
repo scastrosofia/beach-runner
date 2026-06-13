@@ -518,23 +518,25 @@ const CHARACTERS = {
   },
   sofi: {
     name: 'Sofi',
-    base: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Character_output.glb',
-    walk: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Walking_withSkin.glb',
-    run: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_run_fast_7_withSkin.glb',
-    jump: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Running_withSkin.glb',
-    dance: 'character/sofi/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Denim_Pop_Dance_withSkin.glb',
-    spell: 'character/sofi/Meshy_AI_Animation_mage_soell_cast_4_withSkin.glb'
+    base: 'character/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Character_output.glb',
+    walk: 'character/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Walking_withSkin.glb',
+    run: 'character/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_run_fast_7_withSkin.glb',
+    jump: 'character/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Running_withSkin.glb',
+    dance: 'character/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_Denim_Pop_Dance_withSkin.glb',
+    spell: 'character/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped/Meshy_AI_Pastel_Pop_Princess_biped_Animation_mage_soell_cast_4_withSkin.glb'
   },
   bel: {
     name: 'Bel',
-    base: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Character_output.glb',
-    walk: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Walking_withSkin.glb',
-    run: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Running_withSkin.glb',
-    jump: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Jump_Run_withSkin.glb',
-    dance: 'character/bel/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Hip_Hop_Dance_2_withSkin.glb',
-    spell: 'character/bel/Meshy_AI_Animation_mage_soell_cast_2_withSkin.glb'
+    base: 'character/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Character_output.glb',
+    walk: 'character/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Walking_withSkin.glb',
+    run: 'character/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Running_withSkin.glb',
+    jump: 'character/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Jump_Run_withSkin.glb',
+    dance: 'character/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_Hip_Hop_Dance_2_withSkin.glb',
+    spell: 'character/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped/Meshy_AI_Layered_Casual_Avatar_biped_Animation_mage_soell_cast_2_withSkin.glb'
   }
 };
+// Fallback: Pipa spell path is broken, use dance animation instead
+CHARACTERS.pipa.spell = CHARACTERS.pipa.dance;
 const CHARACTER_KEYS = Object.keys(CHARACTERS);
 const CHAR_LIST = [
   { key: 'pipa', name: 'Pipa', img: 'character/8f9fda1a-b3da-4716-89b7-c8c0f69ece68.png', color: '#ff00aa' },
@@ -542,7 +544,7 @@ const CHAR_LIST = [
   { key: 'bel',  name: 'Bel',  img: null, color: '#aa00ff' }
 ];
 // ─── Player State ──────────────────────────────────────────────
-let playerCount = 1;
+let playerCount = 0;
 let playerSelectActive = true;
 let charSelectActive = false; // true once we enter character selection
 const players = [];
@@ -629,6 +631,7 @@ sun.position.set(500, 800, -2000);
 scene.add(sun);
 // ─── Palm Trees ─────────────────────────────────────────────────
 let palmTemplate = null;
+let palmTrees = [];
 function loadPalms() {
   const loader = new GLTFLoader();
   loader.load('assets/palm.glb', (gltf) => {
@@ -647,6 +650,7 @@ function loadPalms() {
       palm.position.set(x, baseOffset, z);
       palm.rotation.y = Math.random() * Math.PI * 2;
       scene.add(palm);
+      palmTrees.push(palm);
     }
   }, undefined, (err) => {
     console.log('palm error:', err);
@@ -665,6 +669,7 @@ function loadPalms() {
       fronds.position.set(0, 80, 0);
       trunk.add(fronds);
       scene.add(trunk);
+      palmTrees.push(trunk);
     }
     console.log('palm trees fallback created');
   });
@@ -777,6 +782,8 @@ let l2LastCoinSpawn = 0;
 let l2ConeBlockTimer = 0;
 let l2ConeTemplate = null;
 let l2CoinTemplate = null;
+let lalalaTex = null;
+let coneTemplate = null;
 let l2DebugTimer = 0;
 let level2StartZ = 0;
 let l2AI = null;
@@ -1043,6 +1050,21 @@ new GLTFLoader().load('assets/musicnote.glb', gltf => {
   l2CoinTemplate = noteTemplate;
   console.log('NOTE PRELOADED');
 }, undefined, e => console.error('NOTE FAILED:', e));
+
+// ─── Preload cone for Level 2 ────────────────────────────
+new GLTFLoader().load('assets/cone.glb',
+  gltf => {
+    coneTemplate = gltf.scene;
+    coneTemplate.traverse(c => {
+      if (c.isMesh) c.material = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide });
+    });
+    const cb = new THREE.Box3().setFromObject(coneTemplate);
+    coneTemplate.scale.setScalar(80 / (cb.max.y - cb.min.y));
+    console.log('CONE LOADED');
+  },
+  undefined,
+  e => console.error('CONE FAILED:', e)
+);
 // ─── Spawn Coin ────────────────────────────────────────────────
 const shadowGeo = new THREE.CylinderGeometry(50, 50, 2, 24);
 const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 });
@@ -1311,6 +1333,11 @@ function lockCharSelection(player, index) {
 }
 function checkBothConfirmed() {
   console.log('checkBothConfirmed called, p1:', p1Confirmed, 'p2:', p2Confirmed, 'count:', playerCount);
+  // Guard: ensure P2 has a character assigned before loading
+  if (playerCount === 2 && players[1] && !players[1].characterKey) {
+    players[1].characterKey = 'pipa';
+    console.log('P2 guard: assigned default character pipa');
+  }
   const bothDone = (playerCount === 1 && p1Confirmed) || (playerCount === 2 && p1Confirmed && p2Confirmed);
   console.log('bothDone:', bothDone);
   if (!bothDone) return;
@@ -1885,7 +1912,9 @@ function update() {
   }
   // ── Player Movement ──
   const in1 = getInput(1);
+  if (in1.spell) console.log('SPELL P1 TRIGGERED');
   const in2 = getInput(2);
+  if (in2.spell) console.log('SPELL P2 TRIGGERED');
   for (let pi = 0; pi < players.length; pi++) {
     const p = players[pi];
     const inp = pi === 0 ? in1 : in2;
@@ -1893,6 +1922,7 @@ function update() {
     // ── Dance toggle ──
     if (p.spellCooldown > 0) p.spellCooldown -= delta;
     if (inp.spell && !p.isCastingSpell) {
+      console.log('casting spell for player', pi, 'spellAction:', !!p.spellAction, 'cooldown:', p.spellCooldown);
       castSpell(pi);
     }
     if (inp.dance && !p.isDancing && p.danceAction) {
@@ -2208,6 +2238,15 @@ function triggerLevel2Transition() {
   game.level2Transition = true;
   game.level2Active = false;
   l2OldBackground = scene.background.clone();
+  // Debug: check asset state
+  console.log('cone template exists:', !!l2ConeTemplate);
+  console.log('note template exists:', !!noteTemplate);
+  console.log('lalala texture exists:', !!lalalaTex);
+  console.log('assets/cone.glb loading...');
+  console.log('assets/musicnote.glb loading...');
+  console.log('lalala.png loading...');
+  // Hide palm trees
+  if (typeof palmTrees !== 'undefined') palmTrees.forEach(p => { if(p) p.visible = false; });
   hideLevel1Scene();
   // Remove any leftover Level 2 obstacles from scene
   for (const obs of l2Cones) { scene.remove(obs); }
@@ -2275,28 +2314,17 @@ function buildLevel2Scene() {
   l2SceneBuilt = true;
   l2LastConeSpawn = game.elapsed;
   l2LastCoinSpawn = game.elapsed;
-  // Load cone template
-  const coneLoader = new GLTFLoader();
-  coneLoader.load('assets/cone.glb', (gltf) => {
-    l2ConeTemplate = gltf.scene;
-    const box = new THREE.Box3().setFromObject(l2ConeTemplate);
-    const height = box.max.y - box.min.y;
-    if (height > 0) {
-      const scale = 80 / height;
-      l2ConeTemplate.scale.setScalar(scale);
-    }
-    // Apply orange color
-    l2ConeTemplate.traverse(c => {
-      if (c.isMesh) c.material = new THREE.MeshBasicMaterial({ color: 0xff6600, side: THREE.DoubleSide });
-    });
+  // Assign preloaded cone template (cloned for safety)
+  if (coneTemplate) {
+    l2ConeTemplate = coneTemplate.clone(true);
     // Position bottom at y=0
     l2ConeTemplate.updateMatrixWorld(true);
-    const scaledBox = new THREE.Box3().setFromObject(l2ConeTemplate);
-    l2ConeTemplate.position.y = -scaledBox.min.y;
-    console.log('cone template loaded, height:', height);
-  }, undefined, (err) => {
-    console.log('cone load error:', err);
-  });
+    const b = new THREE.Box3().setFromObject(l2ConeTemplate);
+    l2ConeTemplate.position.y = -b.min.y;
+    console.log('cone template assigned from preload, height:', b.max.y - b.min.y);
+  } else {
+    console.warn('coneTemplate not preloaded yet');
+  }
   // Road ground (procedural Canvas texture)
   const roadCanvas = document.createElement('canvas');
   roadCanvas.width = 512; roadCanvas.height = 512;
@@ -2330,11 +2358,15 @@ function buildLevel2Scene() {
     l2Walls.push(wall);
   }
   // Goal — lalala.png large fixed plane at finish (no scaling, no depth tricks)
-  const lalalaTex2 = new THREE.TextureLoader().load('lalala.png');
+  lalalaTex = new THREE.TextureLoader().load('lalala.png',
+    tex => { console.log('LALALA LOADED'); },
+    undefined,
+    err => console.error('LALALA FAILED:', err)
+  );
   const lalalaPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(2400, 900),
     new THREE.MeshBasicMaterial({
-      map: lalalaTex2,
+      map: lalalaTex,
       side: THREE.DoubleSide,
       depthTest: true,
       depthWrite: true,
@@ -2442,7 +2474,9 @@ function updateLevel2(delta, dt) {
   const leadingZ = Math.min(p1z, p2z);
   // ── Acceleration/deceleration + left/right for all players ──
   const in1 = getInput(1);
+  if (in1.spell) console.log('L2 SPELL P1 TRIGGERED');
   const in2 = getInput(2);
+  if (in2.spell) console.log('L2 SPELL P2 TRIGGERED');
   // Debug: log gamepad up/axis1 once per second
   l2DebugTimer += delta;
   if (l2DebugTimer >= 1.0) {
@@ -2461,6 +2495,7 @@ function updateLevel2(delta, dt) {
     if (sinVidasEl) sinVidasEl.style.display = 'none';
     if (p.spellCooldown > 0) p.spellCooldown -= delta;
     if (inp.spell && !p.isCastingSpell) {
+      console.log('casting spell for player', pi, 'spellAction:', !!p.spellAction, 'cooldown:', p.spellCooldown);
       castSpell(pi);
     }
     if (p.danceCooldown > 0) p.danceCooldown -= delta;
@@ -2557,7 +2592,7 @@ function updateLevel2(delta, dt) {
     if (l2AI.z < leadingZ) leadingZ = l2AI.z;
   }
   // ── Spawn cones (max 20 on track) ──
-  if (l2ConeBlockTimer <= 0 && l2Cones.length < 20 && game.elapsed - l2LastConeSpawn > 1.5) {
+  if (l2ConeBlockTimer <= 0 && l2Cones.length < 12 && game.elapsed - l2LastConeSpawn > 3.0) {
     spawnLevel2Cone(leadingZ);
     l2LastConeSpawn = game.elapsed;
   }
@@ -2757,8 +2792,8 @@ function updateLevel2Obstacles(dt) {
       if (dist2D < 200) {
         p.score++;
         updateUI();
-        showFloatingText(pi + 1, '+1');
-        spawnCoinParticles(coin.position.clone());
+        showFloatingText(pi + 1, '🎵 +1');
+        spawnSpellParticles(coin.position.clone());
         scene.remove(coin);
         l2Coins.splice(i, 1);
         break;
